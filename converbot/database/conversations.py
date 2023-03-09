@@ -96,8 +96,7 @@ class ConversationDB:
             user_id: Telegram user_ids of the user.
             checkpoints_path: The path to the checkpoints directory.
         """
-        checkpoints = list(self._conversation_save_dir.glob(f"{user_id}-*.json"))
-
+        checkpoints = list(self._conversation_save_dir.rglob(f"{user_id}-*.json"))
         bot_descriptions = []
         for file in checkpoints:
             data = json.loads(file.read_text())

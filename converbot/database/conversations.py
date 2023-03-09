@@ -1,7 +1,7 @@
 import json
 import time
 from pathlib import Path
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional, Union
 
 from converbot.constants import CONVERSATION_SAVE_DIR
 from converbot.core import GPT3Conversation
@@ -87,7 +87,7 @@ class ConversationDB:
     def get_companion_descriptions_list(
             self,
             user_id: int
-    ) -> List[Tuple[str, str]]:
+    ) -> Union[List[Tuple[str, str]], str]:
         """
         Display the list of companion descriptions by user_id.
 
@@ -100,6 +100,8 @@ class ConversationDB:
             data = json.loads(file.read_text())
             bot_descriptions.append((data["bot_description"], file.stem))
 
+        if len(bot_descriptions) == 0:
+            return "You haven`t any conversations with me!\nPlease, /start new conversation with me!"
         return bot_descriptions
 
     def get_checkpoint_path_by_conversation_id(

@@ -127,11 +127,13 @@ async def start(message: types.Message):
     await bot.send_message(
         message.from_user.id,
         text="Welcome to Neece.ai\n"
-             "Let’s take a moment to describe the AI persona you want to talk to."
+             "Let’s take a moment to describe the AI persona you want to talk to.",
+        reply_markup=DEFAULT_KEYBOARD
     )
     await bot.send_message(
         message.from_user.id,
         text="What is the name you want to give your companion?",
+        reply_markup=DEFAULT_KEYBOARD
     )
 
     # Define the handler for the bot's name
@@ -140,7 +142,7 @@ async def start(message: types.Message):
         async with state.proxy() as data:
             data["name"] = message.text
         await BotInfo.age.set()
-        await bot.send_message(message.from_user.id, text="What is their age?")
+        await bot.send_message(message.from_user.id, text="What is their age?", reply_markup=DEFAULT_KEYBOARD)
 
     @dispatcher.message_handler(
         state=BotInfo.age, content_types=types.ContentTypes.TEXT
@@ -153,7 +155,7 @@ async def start(message: types.Message):
         async with state.proxy() as data:
             data["age"] = message.text
         await BotInfo.gender.set()
-        await bot.send_message(message.from_user.id, text="What gender?")
+        await bot.send_message(message.from_user.id, text="What gender?", reply_markup=DEFAULT_KEYBOARD)
 
     @dispatcher.message_handler(state=BotInfo.gender)
     async def process_gender(message: types.Message, state: FSMContext):
@@ -162,7 +164,7 @@ async def start(message: types.Message):
             # You can use the data dictionary here to create your bot object with the collected information
         await BotInfo.interest.set()
         await bot.send_message(
-            message.from_user.id, text="What do they like to do for fun?"
+            message.from_user.id, text="What do they like to do for fun?", reply_markup=DEFAULT_KEYBOARD
         )
 
     @dispatcher.message_handler(state=BotInfo.interest)
@@ -171,7 +173,7 @@ async def start(message: types.Message):
             data["interest"] = message.text
         await BotInfo.profession.set()
         await bot.send_message(
-            message.from_user.id, text="What is their profession?"
+            message.from_user.id, text="What is their profession?", reply_markup=DEFAULT_KEYBOARD
         )
 
     @dispatcher.message_handler(state=BotInfo.profession)
@@ -180,7 +182,7 @@ async def start(message: types.Message):
             data["profession"] = message.text
         await BotInfo.appearance.set()
         await bot.send_message(
-            message.from_user.id, text="What do they look like?"
+            message.from_user.id, text="What do they look like?", reply_markup=DEFAULT_KEYBOARD
         )
 
     @dispatcher.message_handler(state=BotInfo.appearance)
@@ -189,7 +191,7 @@ async def start(message: types.Message):
             data["appearance"] = message.text
         await BotInfo.relationship.set()
         await bot.send_message(
-            message.from_user.id, text="What is their relationship status?"
+            message.from_user.id, text="What is their relationship status?", reply_markup=DEFAULT_KEYBOARD
         )
 
     @dispatcher.message_handler(state=BotInfo.relationship)
@@ -199,7 +201,7 @@ async def start(message: types.Message):
         await BotInfo.mood.set()
         await bot.send_message(
             message.from_user.id,
-            text="Thank you. Finally, describe their personality.",
+            text="Thank you. Finally, describe their personality.", reply_markup=DEFAULT_KEYBOARD
         )
 
     @dispatcher.message_handler(state=BotInfo.mood)
@@ -208,12 +210,12 @@ async def start(message: types.Message):
             data["mood"] = message.text
             # You can use the data dictionary here to create your bot object with the collected information
         context, tone = await show_data(message)
-        await bot.send_message(message.from_user.id, text=context)
+        await bot.send_message(message.from_user.id, text=context, reply_markup=DEFAULT_KEYBOARD)
         # Try to handle context
         await state.finish()
         await bot.send_message(
             message.from_user.id,
-            text="Thank you! Bot information has been saved. One moment...",
+            text="Thank you! Bot information has been saved. One moment...", reply_markup=DEFAULT_KEYBOARD
         )
         await bot.send_chat_action(
             message.from_user.id, action=types.ChatActions.TYPING
@@ -227,7 +229,7 @@ async def start(message: types.Message):
         CONVERSATIONS.add_conversation(message.from_user.id, conversation, context)
         await bot.send_message(
             message.from_user.id,
-            text="Lets start the conversation, can you tell me a little about yourself?",
+            text="Lets start the conversation, can you tell me a little about yourself?", reply_markup=DEFAULT_KEYBOARD
         )
         return None
 
@@ -291,6 +293,7 @@ async def handle_message(message: types.Message) -> None:
         await bot.send_message(
             message.from_user.id,
             text=tone_info,
+            reply_markup=DEFAULT_KEYBOARD
         )
         return None
 
@@ -317,7 +320,7 @@ async def handle_message(message: types.Message) -> None:
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
     )
-    await bot.send_message(message.from_user.id, text=chatbot_response)
+    await bot.send_message(message.from_user.id, text=chatbot_response, reply_markup=DEFAULT_KEYBOARD)
 
 
 async def serialize_conversation_task():

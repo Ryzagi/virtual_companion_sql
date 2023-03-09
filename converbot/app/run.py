@@ -284,10 +284,6 @@ async def delete_conversation(message: types.Message):
         message.from_user.id,
         text=deleted_conversation,
     )
-    await bot.send_message(
-        message.from_user.id,
-        text="Please, /start new conversation with me!",
-    )
 
 
 @dispatcher.message_handler(commands=["delete_all_conversations"])
@@ -297,7 +293,10 @@ async def delete_all_conversations(message: types.Message):
         message.from_user.id,
         text=deleted_all_conversations,
     )
-
+    await bot.send_message(
+        message.from_user.id,
+        text="Please, /start new conversation with me!",
+    )
 
 @dispatcher.message_handler(commands=["debug"])
 async def debug(message: types.Message):

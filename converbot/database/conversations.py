@@ -82,7 +82,7 @@ class ConversationDB:
             checkpoints, key=lambda x: int(x.name.split("-")[-1].replace(".json", "")), reverse=True
         )[0]
 
-        return latest_checkpoint, latest_checkpoint.name.split("-")[-1]
+        return latest_checkpoint, latest_checkpoint.name.split("-")[-1].replace(".json", "")
 
 
     def get_companion_descriptions_list(

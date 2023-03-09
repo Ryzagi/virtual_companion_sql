@@ -257,12 +257,47 @@ async def show_data(message: types.Message):
 @dispatcher.message_handler(commands=["companions_list"])
 async def companions_list(message: types.Message):
     bot_descriptions = CONVERSATIONS.get_companion_descriptions_list(message.from_user.id)
-    bot_descriptions = [f"Conversation ID #{conv_id}:\n{bot_description}" for bot_description, conv_id in bot_descriptions]
+    bot_descriptions = [f"Conversation ID #{conv_id}:\n{bot_description}" for bot_description, conv_id in
+                        bot_descriptions]
     message_bot_descriptions = "\n\n".join(bot_descriptions)
     await bot.send_message(
         message.from_user.id,
         text=message_bot_descriptions,
     )
+
+
+@dispatcher.message_handler(commands=["load_conversation"])
+async def load_conversation(message: types.Message):
+    conv_id = message.text.split(" ")[-1]
+    loaded_conversation = CONVERSATIONS.load_conversation(message.from_user.id, conv_id)
+    await bot.send_message(
+        message.from_user.id,
+        text=loaded_conversation,
+    )
+
+
+@dispatcher.message_handler(commands=["delete_conversation"])
+async def delete_conversation(message: types.Message):
+    conv_id = message.text.split(" ")[-1]
+    deleted_conversation = CONVERSATIONS.delete_conversation(message.from_user.id, conv_id)
+    await bot.send_message(
+        message.from_user.id,
+        text=deleted_conversation,
+    )
+    await bot.send_message(
+        message.from_user.id,
+        text="Please, /start new conversation with me!",
+    )
+
+
+@dispatcher.message_handler(commands=["delete_all_conversations"])
+async def delete_all_conversations(message: types.Message):
+    deleted_all_conversations = CONVERSATIONS.delete_all_conversations_by_user_id(message.from_user.id)
+    await bot.send_message(
+        message.from_user.id,
+        text=deleted_all_conversations,
+    )
+
 
 @dispatcher.message_handler(commands=["debug"])
 async def debug(message: types.Message):

@@ -16,8 +16,8 @@ class ConversationDB:
     """
 
     def __init__(
-        self,
-        conversation_save_dir: Path = CONVERSATION_SAVE_DIR,
+            self,
+            conversation_save_dir: Path = CONVERSATION_SAVE_DIR,
     ) -> None:
         self._conversation_save_dir = conversation_save_dir
         self._conversation_save_dir.mkdir(parents=True, exist_ok=True)
@@ -39,7 +39,7 @@ class ConversationDB:
         return self._user_to_conversation_id.get(str(user_id), None)
 
     def add_conversation(
-        self, user_id: int, conversation: GPT3Conversation, bot_description: str
+            self, user_id: int, conversation: GPT3Conversation, bot_description: str
     ) -> str:
         conversation_id = f"{user_id}-{int(time.time())}"
         self._user_to_conversation[str(user_id)] = conversation
@@ -61,7 +61,7 @@ class ConversationDB:
             conversation_save_path.mkdir(exist_ok=True)
 
             conversation_save_path = (
-                conversation_save_path / self._user_to_conversation_id[user_id]
+                    conversation_save_path / self._user_to_conversation_id[user_id]
             )
             conversation_save_path = conversation_save_path.with_suffix(".json")
 
@@ -69,7 +69,7 @@ class ConversationDB:
 
     @staticmethod
     def get_latest_conversation_checkpoint_path(
-        checkpoints_path: Path,
+            checkpoints_path: Path,
     ) -> Tuple[Path, str]:
         """
         Find the latest conversation checkpoint for the user at disk.
@@ -84,7 +84,6 @@ class ConversationDB:
 
         return latest_checkpoint, latest_checkpoint.stem
 
-
     def get_companion_descriptions_list(
             self,
             user_id: int
@@ -94,15 +93,69 @@ class ConversationDB:
 
         Args:
             user_id: Telegram user_ids of the user.
-            checkpoints_path: The path to the checkpoints directory.
         """
         checkpoints = list(self._conversation_save_dir.rglob(f"{user_id}-*.json"))
         bot_descriptions = []
         for file in checkpoints:
             data = json.loads(file.read_text())
-            bot_descriptions.append((data["bot_description"], file.stem.split('-')[-1]))
+            bot_descriptions.append((data["bot_description"], file.stem))
 
         return bot_descriptions
+
+    def get_checkpoint_path_by_conversation_id(
+            self,
+            user_id: int,
+            conversation_id: str
+    ) -> Path:
+        """
+        Find the checkpoint path by conversation id of the user.
+
+        Args:
+            conversation_id: conversation id of the user.
+            user_id: Telegram user_ids of the user.
+        """
+
+        path = self._conversation_save_dir / str(user_id) / conversation_id
+        path = path.with_suffix('.json')
+        return path
+
+    def delete_conversation(
+            self,
+            user_id: int,
+            conversation_id: str
+    ) -> str:
+        file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
+        if file_path.exists():
+            file_path.unlink()
+            return f"#{conversation_id} conversation ID has been delete."
+        else:
+            return f"#{conversation_id} conversation ID does not exist."
+
+    def load_conversation(
+            self,
+            user_id: int,
+            conversation_id: str
+    ) -> str:
+        file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
+        if file_path.exists():
+            conversation = GPT3Conversation.from_checkpoint(file_path)
+            self._user_to_conversation[str(user_id)] = conversation
+            self._user_to_conversation_id[
+                str(user_id)
+            ] = conversation_id
+
+            return f"#{conversation_id} conversation ID has been loaded."
+        else:
+            return f"#{conversation_id} conversation ID does not exist."
+
+    def delete_all_conversations_by_user_id(
+            self,
+            user_id: int
+    ) -> str:
+        directory_path = self._conversation_save_dir / str(user_id)
+        for file_path in directory_path.glob("*.json"):
+            file_path.unlink()
+        return "All conversation ID`s deleted successfully."
 
     def load_conversations(self) -> None:
         """

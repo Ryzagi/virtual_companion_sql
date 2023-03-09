@@ -67,7 +67,7 @@ storage = MemoryStorage()
 dispatcher = Dispatcher(bot, storage=storage)
 
 DEFAULT_KEYBOARD = types.ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton("/start")], [KeyboardButton("/debug")]],
+    keyboard=[[KeyboardButton("/start")], [KeyboardButton("/debug")], [KeyboardButton("/companions_list")]],
     resize_keyboard=True,
     one_time_keyboard=True,
 )
@@ -253,6 +253,16 @@ async def show_data(message: types.Message):
     )
     return res, data.get("mood", "Not provided")
 
+
+@dispatcher.message_handler(commands=["companions_list"])
+async def companions_list(message: types.Message):
+    bot_descriptions = CONVERSATIONS.get_companion_descriptions_list(message.from_user.id)
+    bot_descriptions = [f"Conversation ID #{conv_id}:/n{bot_description}" for conv_id, bot_description in bot_descriptions]
+    message_bot_descriptions = "\n\n".join(bot_descriptions)
+    await bot.send_message(
+        message.from_user.id,
+        text=message_bot_descriptions,
+    )
 
 @dispatcher.message_handler(commands=["debug"])
 async def debug(message: types.Message):

@@ -1,6 +1,7 @@
+import json
 import time
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 from converbot.constants import CONVERSATION_SAVE_DIR
 from converbot.core import GPT3Conversation
@@ -82,6 +83,27 @@ class ConversationDB:
         )[0]
 
         return latest_checkpoint, latest_checkpoint.name.split("-")[-1]
+
+
+    def get_companion_descriptions_list(
+            self,
+            user_id: int
+    ) -> List[Tuple[str, str]]:
+        """
+        Display the list of companion descriptions by user_id.
+
+        Args:
+            user_id: Telegram user_ids of the user.
+            checkpoints_path: The path to the checkpoints directory.
+        """
+        checkpoints = list(self._conversation_save_dir.glob(f"{user_id}-*.json"))
+
+        bot_descriptions = []
+        for file in checkpoints:
+            data = json.loads(file.read_text())
+            bot_descriptions.append((data["bot_description"], file.stem.split('-')[-1]))
+
+        return bot_descriptions
 
     def load_conversations(self) -> None:
         """

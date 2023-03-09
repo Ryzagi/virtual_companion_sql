@@ -99,9 +99,8 @@ class ConversationDB:
         for file in checkpoints:
             data = json.loads(file.read_text())
             bot_descriptions.append((data["bot_description"], file.stem))
-
         if len(bot_descriptions) == 0:
-            return "You haven`t any conversations with me!\nPlease, /start new conversation with me!"
+            return None
         return bot_descriptions
 
     def get_checkpoint_path_by_conversation_id(

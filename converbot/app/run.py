@@ -257,7 +257,7 @@ async def show_data(message: types.Message):
 @dispatcher.message_handler(commands=["companions_list"])
 async def companions_list(message: types.Message):
     bot_descriptions = CONVERSATIONS.get_companion_descriptions_list(message.from_user.id)
-    bot_descriptions = [f"Conversation ID #{conv_id}:/n{bot_description}" for bot_description, conv_id in bot_descriptions]
+    bot_descriptions = [f"Conversation ID #{conv_id}:\n{bot_description}" for bot_description, conv_id in bot_descriptions]
     message_bot_descriptions = "\n\n".join(bot_descriptions)
     await bot.send_message(
         message.from_user.id,

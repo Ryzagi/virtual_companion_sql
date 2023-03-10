@@ -362,7 +362,7 @@ async def handle_message(message: types.Message) -> None:
         chatbot_message=chatbot_response,
         env=args.env,
     )
-
+    CONVERSATIONS.serialize_user_conversation(user_id=message.from_user.id)
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
     )
@@ -374,7 +374,7 @@ async def handle_message(message: types.Message) -> None:
 
 
 async def serialize_conversation_task():
-    CONVERSATIONS.serialize_conversations()
+    #CONVERSATIONS.serialize_conversations()
     pass
 
 

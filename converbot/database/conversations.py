@@ -47,6 +47,24 @@ class ConversationDB:
         self._conversation_id_to_bot_description[conversation_id] = bot_description
         return conversation_id
 
+    def serialize_user_conversation(self, user_id: int) -> None:
+        """
+        Serialize the conversations to disk.
+
+        Returns: None
+        """
+        user_id = str(user_id)
+        conversation_id = self._user_to_conversation_id[user_id]
+        chatbot_description = self._conversation_id_to_bot_description[conversation_id]
+        conversation_save_path = self._conversation_save_dir / str(user_id)
+        conversation_save_path.mkdir(exist_ok=True)
+        conversation_save_path = (
+                conversation_save_path / self._user_to_conversation_id[user_id]
+        )
+        conversation_save_path = conversation_save_path.with_suffix(".json")
+        self._user_to_conversation[user_id].save(conversation_save_path, bot_description=chatbot_description)
+
+
     def serialize_conversations(self) -> None:
         """
         Serialize the conversations to disk.

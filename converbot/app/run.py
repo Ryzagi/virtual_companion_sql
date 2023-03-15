@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 
+import aiohttp
 import aioschedule
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -11,13 +12,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import KeyboardButton
 from aiogram.utils import executor
-
-from converbot.app.bot_utils import create_conversation
 from converbot.constants import PROD_ENV, DEV_ENV
-from converbot.database.conversations import ConversationDB
-from converbot.database.history_writer import SQLHistoryWriter
-from converbot.prompt.generator import ConversationalPromptGenerator
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -54,13 +49,6 @@ def parse_args():
 
 
 args = parse_args()
-
-HISTORY_WRITER = SQLHistoryWriter.from_config(Path(args.sql_config_path))
-
-CONVERSATIONS = ConversationDB()
-PROMPT_GENERATOR = ConversationalPromptGenerator.from_json(
-    args.prompt_config_path
-)
 
 bot = Bot(token=args.telegram_token)
 storage = MemoryStorage()
@@ -209,7 +197,29 @@ async def start(message: types.Message):
         async with state.proxy() as data:
             data["mood"] = message.text
             # You can use the data dictionary here to create your bot object with the collected information
-        context, tone = await show_data(message)
+
+        state = dispatcher.current_state(
+            chat=message.chat.id, user=message.from_user.id
+        )
+        data = await state.get_data()
+
+        async with aiohttp.ClientSession() as session:
+            # Example for NEW_COMPANION_ENDPOINT
+            async with session.post(
+                    "http://localhost:8000/api/SpeechSynthesizer/new_companion",
+                    json={
+                        "user_id": message.from_user.id,
+                        "name": data.get('name', 'Not provided'),
+                        "age": data.get('age', 'Not provided'),
+                        "gender": data.get('gender', 'Not provided'),
+                        "interest": data.get('interest', 'Not provided'),
+                        "profession": data.get('profession', 'Not provided'),
+                        "appearance": data.get('appearance', 'Not provided'),
+                        "relationship": data.get('relationship', 'Not provided'),
+                        "mood": data.get('mood', 'Not provided'),
+                    },
+            ) as response:
+                context = await response.text()
         await bot.send_message(message.from_user.id, text=context, reply_markup=DEFAULT_KEYBOARD)
         # Try to handle context
         await state.finish()
@@ -221,12 +231,6 @@ async def start(message: types.Message):
             message.from_user.id, action=types.ChatActions.TYPING
         )
 
-        conversation = create_conversation(
-            prompt=PROMPT_GENERATOR(context),
-            tone=tone,
-            config_path=args.model_config_path
-        )
-        CONVERSATIONS.add_conversation(message.from_user.id, conversation, context)
         await bot.send_message(
             message.from_user.id,
             text="Lets start the conversation, can you tell me a little about yourself?", reply_markup=DEFAULT_KEYBOARD
@@ -234,58 +238,71 @@ async def start(message: types.Message):
         return None
 
 
-async def show_data(message: types.Message):
-    state = dispatcher.current_state(
-        chat=message.chat.id, user=message.from_user.id
-    )
-    data = await state.get_data()
-
-    #    res = f"Here's the information about your companion:\n\n" \
-    res = (
-        f"Name: {data.get('name', 'Not provided')}\n"
-        f"Age: {data.get('age', 'Not provided')}\n"
-        f"Gender: {data.get('gender', 'Not provided')}\n"
-        f"interests: {data.get('interest', 'Not provided')}\n"
-        f"Profession: {data.get('profession', 'Not provided')}\n"
-        f"Appearance: {data.get('appearance', 'Not provided')}\n"
-        f"Relationship status: {data.get('relationship', 'Not provided')}\n"
-        f"Personality: {data.get('mood', 'Not provided')}\n"
-    )
-    return res, data.get("mood", "Not provided")
-
-
 @dispatcher.message_handler(commands=["companions_list"])
 async def companions_list(message: types.Message):
-    bot_descriptions = CONVERSATIONS.get_companion_descriptions_list(message.from_user.id)
+    # Example for COMPANION_LIST_ENDPOINT
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/list_companion",
+                json={"user_id": message.from_user.id},
+        ) as response:
+            bot_descriptions = await response.json()
+
     if bot_descriptions is None:
         await bot.send_message(
             message.from_user.id,
-            text="You haven`t any conversations with me!\nPlease, /start new conversation with me!",
+            text="You haven`t any conversations!\nPlease, /start new conversation with me!",
         )
-        return None
-    bot_descriptions = [f"Conversation ID #{conv_id}:\n{bot_description}" for bot_description, conv_id in
-                        bot_descriptions]
-    message_bot_descriptions = "\n\n".join(bot_descriptions)
+
+    bot_description_output = []
+    for companion_info in bot_descriptions:
+        bot_description = f"Conversation ID #{companion_info['companion_id']}:\n\n{companion_info['description']}"
+        bot_description_output.append(bot_description)
+
+    message_bot_descriptions = "\n\n".join(bot_description_output)
+
     await bot.send_message(
         message.from_user.id,
-        text=message_bot_descriptions,
+        text=message_bot_descriptions
     )
 
 
 @dispatcher.message_handler(commands=["load_conversation"])
 async def load_conversation(message: types.Message):
     conv_id = message.text.split(" ")[-1]
-    loaded_conversation = CONVERSATIONS.load_conversation(message.from_user.id, conv_id)
+    # loaded_conversation = CONVERSATIONS.load_conversation(message.from_user.id, conv_id)
+
+    async with aiohttp.ClientSession() as session:
+        # Example for SWITCH_COMPANION_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/switch_companion",
+                json={"user_id": message.from_user.id, "companion_id": conv_id},
+        ) as response:
+            loaded_conversation = await response.text()
+
     await bot.send_message(
         message.from_user.id,
-        text=loaded_conversation,
+        text=loaded_conversation
+    )
+
+    await bot.send_message(
+        message.from_user.id,
+        text="Hi there! It's nice to meet you again.",
     )
 
 
 @dispatcher.message_handler(commands=["delete_conversation"])
 async def delete_conversation(message: types.Message):
     conv_id = message.text.split(" ")[-1]
-    deleted_conversation = CONVERSATIONS.delete_conversation(message.from_user.id, conv_id)
+    # deleted_conversation = CONVERSATIONS.delete_conversation(message.from_user.id, conv_id)
+    async with aiohttp.ClientSession() as session:
+        # Example for DELETE_COMPANION_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/delete_companion",
+                json={"user_id": message.from_user.id, "companion_id": conv_id},
+        ) as response:
+            deleted_conversation = await response.text()
+
     await bot.send_message(
         message.from_user.id,
         text=deleted_conversation,
@@ -294,7 +311,15 @@ async def delete_conversation(message: types.Message):
 
 @dispatcher.message_handler(commands=["delete_all_conversations"])
 async def delete_all_conversations(message: types.Message):
-    deleted_all_conversations = CONVERSATIONS.delete_all_conversations_by_user_id(message.from_user.id)
+    # deleted_all_conversations = CONVERSATIONS.delete_all_conversations_by_user_id(message.from_user.id)
+    async with aiohttp.ClientSession() as session:
+        # Example for DELETE_ALL_COMPANIONS_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/delete_all_companions",
+                json={"user_id": message.from_user.id},
+        ) as response:
+            deleted_all_conversations = await response.text()
+
     await bot.send_message(
         message.from_user.id,
         text=deleted_all_conversations,
@@ -304,65 +329,40 @@ async def delete_all_conversations(message: types.Message):
         text="Please, /start new conversation with me!",
     )
 
+
 @dispatcher.message_handler(commands=["debug"])
 async def debug(message: types.Message):
-    conversation = CONVERSATIONS.get_conversation(message.from_user.id)
-    if conversation is None:
+    # conversation = CONVERSATIONS.get_conversation(message.from_user.id)
+    async with aiohttp.ClientSession() as session:
+        # Example for DEBUG_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/debug",
+                json={"user_id": message.from_user.id},
+        ) as response:
+            conversation = await response.text()
+            status_code = response.status
+
+    if status_code == 406:
         await bot.send_message(
             message.from_user.id, text="Please, provide initial context."
         )
-    state = conversation.change_debug_mode()
-    if state:
-        await bot.send_message(
-            message.from_user.id,
-            text="«Debug mode on»\nPlease continue the discussion with your "
-                 "companion",
-        )
-    else:
-        await bot.send_message(
-            message.from_user.id,
-            text="«Debug mode off»\nPlease continue the discussion with your "
-                 "companion",
-        )
+
+    await bot.send_message(
+        message.from_user.id, text=conversation
+    )
 
 
 @dispatcher.message_handler()
 @try_
 async def handle_message(message: types.Message) -> None:
-    # Agent side:
-    if message.text.startswith("/"):
-        conversation = CONVERSATIONS.get_conversation(message.from_user.id)
-        tone_info = f"Information «{message.text[1:]}» has been added."
-        conversation.set_tone(message.text[1:])
-        # Proxy side:
-        await bot.send_chat_action(
-            message.from_user.id, action=types.ChatActions.TYPING
-        )
-        await asyncio.sleep(1)
+    async with aiohttp.ClientSession() as session:
+        # Example for MESSAGE_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/message",
+                json={"user_id": message.from_user.id, "content": message.text},
+        ) as response:
+            chatbot_response = await response.text()
 
-        await bot.send_message(
-            message.from_user.id,
-            text=tone_info,
-            reply_markup=DEFAULT_KEYBOARD
-        )
-        return None
-
-    # Handle conversation
-    await bot.send_chat_action(
-        message.from_user.id, action=types.ChatActions.TYPING
-    )
-
-    conversation = CONVERSATIONS.get_conversation(message.from_user.id)
-    chatbot_response = conversation.ask(message.text)
-
-    HISTORY_WRITER.write_message(
-        user_id=message.from_user.id,
-        conversation_id=CONVERSATIONS.get_conversation_id(message.from_user.id),
-        user_message=message.text,
-        chatbot_message=chatbot_response,
-        env=args.env,
-    )
-    CONVERSATIONS.serialize_user_conversation(user_id=message.from_user.id)
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
     )
@@ -374,7 +374,7 @@ async def handle_message(message: types.Message) -> None:
 
 
 async def serialize_conversation_task():
-    #CONVERSATIONS.serialize_conversations()
+    # CONVERSATIONS.serialize_conversations()
     pass
 
 
@@ -386,8 +386,6 @@ async def scheduler():
 
 
 async def on_startup(dispatcher):
-    CONVERSATIONS.load_conversations()
-
     asyncio.create_task(scheduler())
 
 

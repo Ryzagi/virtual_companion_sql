@@ -253,6 +253,7 @@ async def companions_list(message: types.Message):
             message.from_user.id,
             text="You haven`t any conversations!\nPlease, /start new conversation with me!",
         )
+        return None
 
     bot_description_output = []
     for companion_info in bot_descriptions:

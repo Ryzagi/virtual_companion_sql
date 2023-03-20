@@ -23,7 +23,7 @@ from converbot.prompt.generator import ConversationalPromptGenerator
 from fastapi import FastAPI, Response, status
 import os
 
-
+ENABLE_SLEEP = True
 app = FastAPI()
 
 
@@ -31,6 +31,7 @@ os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
 os.environ['MODEL_CONFIG_PATH'] = '../../configs/model_config.json'
 os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
+
 
 HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
@@ -49,7 +50,7 @@ MESSAGE_ENDPOINT = "/api/SpeechSynthesizer/message"
 DEBUG_ENDPOINT = "/api/SpeechSynthesizer/debug"
 NEW_USER_ENDPOINT = "/api/SpeechSynthesizer/new_user"
 NEW_COMPANION_ENDPOINT = "/api/SpeechSynthesizer/new_companion"
-
+SLEEP_ENDPOINT = "/api/SpeechSynthesizer/sleep"
 
 @app.post(NEW_USER_ENDPOINT)
 async def new_user(request: NewUser):
@@ -137,17 +138,24 @@ async def debug(request: Debug):
 
     return PlainTextResponse(text)
 
+#@app.post(SLEEP_ENDPOINT)
+#async def toggle_sleep(request: Message) -> None:
+#    global ENABLE_SLEEP
+#    enable_sleep = not ENABLE_SLEEP
+#    text=f"Sleep functionality {'enabled' if enable_sleep else 'disabled'}"
+#    return PlainTextResponse(text)
+
 
 @app.post(MESSAGE_ENDPOINT)
 # TODO: TRY func
 async def handle_message(request: Message):
     # Agent side:
-    if request.content.startswith("/"):
+    if request.content.startswith("/tone"):
         conversation = CONVERSATIONS.get_conversation(request.user_id)
-        tone_info = f"Information «{request.content[1:]}» has been added."
-        conversation.set_tone(request.content[1:])
+        tone_info = f"Information «{request.content[6:]}» has been added."
+        conversation.set_tone(request.content[6:])
 
-        return tone_info
+        return PlainTextResponse(tone_info)
 
     conversation = CONVERSATIONS.get_conversation(request.user_id)
     chatbot_response = conversation.ask(request.content)

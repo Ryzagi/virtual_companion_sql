@@ -54,6 +54,8 @@ bot = Bot(token=args.telegram_token)
 storage = MemoryStorage()
 dispatcher = Dispatcher(bot, storage=storage)
 
+ENABLE_SLEEP =True
+
 DEFAULT_KEYBOARD = types.ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton("/start")], [KeyboardButton("/debug")], [KeyboardButton("/companions_list")]],
     resize_keyboard=True,
@@ -352,6 +354,19 @@ async def debug(message: types.Message):
         message.from_user.id, text=conversation
     )
 
+@dispatcher.message_handler(commands=["sleep"])
+async def toggle_sleep(message: types.Message) -> None:
+    #async with session.post(
+    #        "http://localhost:8000/api/SpeechSynthesizer/sleep",
+    #        json={"user_id": message.from_user.id},
+    #) as response:
+    #    mode = await response.text()
+    global ENABLE_SLEEP
+
+    ENABLE_SLEEP = not ENABLE_SLEEP
+    await bot.send_message(
+        message.from_user.id, text=f"Sleep functionality {'enabled' if ENABLE_SLEEP else 'disabled'}"
+    )
 
 @dispatcher.message_handler()
 @try_
@@ -367,7 +382,8 @@ async def handle_message(message: types.Message) -> None:
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
     )
-    await asyncio.sleep(len(chatbot_response) * 0.07)
+    if ENABLE_SLEEP:
+        await asyncio.sleep(len(chatbot_response) * 0.07)
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
     )

@@ -151,9 +151,10 @@ async def debug(request: Debug):
 async def handle_message(request: Message):
     # Agent side:
     if request.content.startswith("/tone"):
+        tone = request.content[6:]
         conversation = CONVERSATIONS.get_conversation(request.user_id)
-        tone_info = f"Information «{request.content[6:]}» has been added."
-        conversation.set_tone(request.content[6:])
+        tone_info = f"Information «{tone}» has been added."
+        conversation.set_tone(tone)
 
         return PlainTextResponse(tone_info)
 

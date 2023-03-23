@@ -378,6 +378,7 @@ async def handle_message(message: types.Message) -> None:
                 json={"user_id": message.from_user.id, "content": message.text},
         ) as response:
             chatbot_response = await response.text()
+    num_messages = len(chatbot_response) // 4000
 
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
@@ -387,7 +388,13 @@ async def handle_message(message: types.Message) -> None:
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
     )
-    await bot.send_message(message.from_user.id, text=chatbot_response, reply_markup=DEFAULT_KEYBOARD)
+    for i in range(num_messages):
+        await bot.send_message(
+            message.from_user.id,
+            text=chatbot_response[i * 4000: (i + 1) * 4000],
+        )
+
+    #await bot.send_message(message.from_user.id, text=chatbot_response, reply_markup=DEFAULT_KEYBOARD)
 
 
 async def serialize_conversation_task():

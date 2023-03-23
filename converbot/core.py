@@ -124,7 +124,7 @@ class GPT3Conversation:
         if not self._debug:
             return output
 
-        return self._prompt.original_prompt_text
+        return self._debug_callback.last_used_prompt + output
 
     def save(self, file_path: Path, bot_description) -> None:
         """

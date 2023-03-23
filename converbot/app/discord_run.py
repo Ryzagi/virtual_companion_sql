@@ -384,10 +384,9 @@ async def on_message(message: Message) -> None:
             chatbot_response = await response.text()
     num_messages = len(chatbot_response) // 4000
     await message.channel.typing()
-    for i in range(num_messages):
+    for i in range(num_messages + 1):
         await message.channel.typing()
         await message.channel.send(chatbot_response[i * 4000: (i + 1) * 4000])
-
 
     if ENABLE_SLEEP:
         await asyncio.sleep(len(chatbot_response) * 0.07)

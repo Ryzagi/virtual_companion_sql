@@ -388,7 +388,7 @@ async def handle_message(message: types.Message) -> None:
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
     )
-    for i in range(num_messages):
+    for i in range(num_messages + 1):
         await bot.send_message(
             message.from_user.id,
             text=chatbot_response[i * 4000: (i + 1) * 4000],

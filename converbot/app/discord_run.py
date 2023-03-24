@@ -260,7 +260,6 @@ def create_conversation_state():
         'state': ConversationState.NAME
     }
 
-conversation_states = {}
 
 @bot.event
 async def on_message(message: Message) -> None:
@@ -268,132 +267,127 @@ async def on_message(message: Message) -> None:
 
     if message.author == bot.user:
         return
-    # Only respond to direct messages
-    if isinstance(message.channel, discord.DMChannel):
-        if author_id not in conversation_states:
-            # update conversation state
-            if message.content.startswith('/start'):
-                await start(message)
-                return
-            else:
-                await message.channel.send("Please enter /start to begin.")
-                return
-        else:
-            state = conversation_states[author_id]['state']
-            if state == ConversationState.NAME:
-                conversation_states[author_id]['name'] = message.content
-                conversation_states[author_id]['state'] = ConversationState.AGE
-                await message.channel.typing()
-                await message.channel.send("What is their age?")
-                return
-            elif state == ConversationState.AGE:
-                if not message.content.isdigit():
-                    await message.channel.typing()
-                    await message.reply("Age should be a number.\nHow old is your bot?")
-                else:
-                    conversation_states[author_id]['age'] = message.content
-                    conversation_states[author_id]['state'] = ConversationState.GENDER
-                    await message.channel.typing()
-                    await message.channel.send("What gender?")
-                    return
-            elif state == ConversationState.GENDER:
-                conversation_states[author_id]['gender'] = message.content
-                conversation_states[author_id]['state'] = ConversationState.INTEREST
-                await message.channel.typing()
-                await message.channel.send("What do they like to do for fun?")
-                return
-            elif state == ConversationState.INTEREST:
-                conversation_states[author_id]['interest'] = message.content
-                conversation_states[author_id]['state'] = ConversationState.PROFESSION
-                await message.channel.typing()
-                await message.channel.send("What is their profession?")
-                return
-            elif state == ConversationState.PROFESSION:
-                conversation_states[author_id]['profession'] = message.content
-                conversation_states[author_id]['state'] = ConversationState.APPEARANCE
-                await message.channel.typing()
-                await message.channel.send("What do they look like?")
-                return
-            elif state == ConversationState.APPEARANCE:
-                conversation_states[author_id]['appearance'] = message.content
-                conversation_states[author_id]['state'] = ConversationState.RELATIONSHIP
-                await message.channel.typing()
-                await message.channel.send("What is their relationship status?")
-                return
-            elif state == ConversationState.RELATIONSHIP:
-                conversation_states[author_id]['relationship'] = message.content
-                conversation_states[author_id]['state'] = ConversationState.MOOD
-                await message.channel.typing()
-                await message.channel.send("Thank you. Finally, describe their personality.")
-                return
-            elif state == ConversationState.MOOD:
-                conversation_states[author_id]['mood'] = message.content
-                await message.channel.typing()
-                await message.channel.send("Thank you! Bot information has been added")
-                await message.channel.typing()
-                async with aiohttp.ClientSession() as session:
-                    # Example for NEW_COMPANION_ENDPOINT
-                    async with session.post(
-                            "http://localhost:8000/api/SpeechSynthesizer/new_companion",
-                            json={
-                                "user_id": message.author.id,
-                                "name": conversation_states[author_id].get('name', 'Not provided'),
-                                "age": conversation_states[author_id].get('age', 'Not provided'),
-                                "gender": conversation_states[author_id].get('gender', 'Not provided'),
-                                "interest": conversation_states[author_id].get('interest', 'Not provided'),
-                                "profession": conversation_states[author_id].get('profession', 'Not provided'),
-                                "appearance": conversation_states[author_id].get('appearance', 'Not provided'),
-                                "relationship": conversation_states[author_id].get('relationship', 'Not provided'),
-                                "mood": conversation_states[author_id].get('mood', 'Not provided'),
-                            },
-                    ) as response:
-                        context = await response.text()
-                await message.channel.send(context)
-                # Try to handle context
-                await message.channel.typing()
-                await message.channel.send("Thank you! Bot information has been saved. One moment...")
-                await message.channel.typing()
-                await message.channel.send("Lets start the conversation, can you tell me a little about yourself?")
-                conversation_states[author_id]['state'] = ConversationState.FINISHED
+    if not isinstance(message.channel, discord.DMChannel):
+        return
+    if message.content.startswith('/start'):
+        await start(message)
+        return
 
-                return
+    if author_id not in conversation_states:
+        await message.channel.send("Please enter /start to begin.")
+        return
 
-
-        if message.content.startswith('/debug'):
-            await debug(message)
-            return
-        if message.content.startswith('/companions_list'):
-            await companions_list(message)
-            return
-        if message.content.startswith('/delete_all_conversations'):
-            await delete_all_conversations(message)
-            return
-        if message.content.startswith('/load_conversation'):
-            await load_conversation(message)
-            return
-        if message.content.startswith('/delete_conversation'):
-            await delete_conversation(message)
-            return
-        if message.content.startswith('/sleep'):
-            await toggle_sleep(message)
-            return
-
-        async with aiohttp.ClientSession() as session:
-            # Example for MESSAGE_ENDPOINT
-            async with session.post(
-                    "http://localhost:8000/api/SpeechSynthesizer/message",
-                    json={"user_id": message.author.id, "content": message.content},
-            ) as response:
-                chatbot_response = await response.text()
-        num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
+    state = conversation_states[author_id]['state']
+    if state == ConversationState.NAME:
+        conversation_states[author_id]['name'] = message.content
+        conversation_states[author_id]['state'] = ConversationState.AGE
         await message.channel.typing()
-        for i in range(num_messages + 1):
+        await message.channel.send("What is their age?")
+        return
+    elif state == ConversationState.AGE:
+        if not message.content.isdigit():
             await message.channel.typing()
-            await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
-
-        if ENABLE_SLEEP:
-            await asyncio.sleep(len(chatbot_response) * 0.07)
+            await message.reply("Age should be a number.\nHow old is your bot?")
+        else:
+            conversation_states[author_id]['age'] = message.content
+            conversation_states[author_id]['state'] = ConversationState.GENDER
+            await message.channel.typing()
+            await message.channel.send("What gender?")
+            return
+    elif state == ConversationState.GENDER:
+        conversation_states[author_id]['gender'] = message.content
+        conversation_states[author_id]['state'] = ConversationState.INTEREST
         await message.channel.typing()
+        await message.channel.send("What do they like to do for fun?")
+        return
+    elif state == ConversationState.INTEREST:
+        conversation_states[author_id]['interest'] = message.content
+        conversation_states[author_id]['state'] = ConversationState.PROFESSION
+        await message.channel.typing()
+        await message.channel.send("What is their profession?")
+        return
+    elif state == ConversationState.PROFESSION:
+        conversation_states[author_id]['profession'] = message.content
+        conversation_states[author_id]['state'] = ConversationState.APPEARANCE
+        await message.channel.typing()
+        await message.channel.send("What do they look like?")
+        return
+    elif state == ConversationState.APPEARANCE:
+        conversation_states[author_id]['appearance'] = message.content
+        conversation_states[author_id]['state'] = ConversationState.RELATIONSHIP
+        await message.channel.typing()
+        await message.channel.send("What is their relationship status?")
+        return
+    elif state == ConversationState.RELATIONSHIP:
+        conversation_states[author_id]['relationship'] = message.content
+        conversation_states[author_id]['state'] = ConversationState.MOOD
+        await message.channel.typing()
+        await message.channel.send("Thank you. Finally, describe their personality.")
+        return
+    elif state == ConversationState.MOOD:
+        conversation_states[author_id]['mood'] = message.content
+        await message.channel.typing()
+        await message.channel.send("Thank you! Bot information has been added")
+        await message.channel.typing()
+        async with aiohttp.ClientSession() as session:
+            # Example for NEW_COMPANION_ENDPOINT
+            async with session.post(
+                    "http://localhost:8000/api/SpeechSynthesizer/new_companion",
+                    json={
+                        "user_id": message.author.id,
+                        "name": conversation_states[author_id].get('name', 'Not provided'),
+                        "age": conversation_states[author_id].get('age', 'Not provided'),
+                        "gender": conversation_states[author_id].get('gender', 'Not provided'),
+                        "interest": conversation_states[author_id].get('interest', 'Not provided'),
+                        "profession": conversation_states[author_id].get('profession', 'Not provided'),
+                        "appearance": conversation_states[author_id].get('appearance', 'Not provided'),
+                        "relationship": conversation_states[author_id].get('relationship', 'Not provided'),
+                        "mood": conversation_states[author_id].get('mood', 'Not provided'),
+                    },
+            ) as response:
+                context = await response.text()
+        await message.channel.send(context)
+        # Try to handle context
+        await message.channel.typing()
+        await message.channel.send("Thank you! Bot information has been saved. One moment...")
+        await message.channel.typing()
+        await message.channel.send("Lets start the conversation, can you tell me a little about yourself?")
+        conversation_states[author_id]['state'] = ConversationState.FINISHED
+        return
+
+    if message.content.startswith('/debug'):
+        await debug(message)
+        return
+    if message.content.startswith('/companions_list'):
+        await companions_list(message)
+        return
+    if message.content.startswith('/delete_all_conversations'):
+        await delete_all_conversations(message)
+        return
+    if message.content.startswith('/load_conversation'):
+        await load_conversation(message)
+        return
+    if message.content.startswith('/delete_conversation'):
+        await delete_conversation(message)
+        return
+    if message.content.startswith('/sleep'):
+        await toggle_sleep(message)
+        return
+    async with aiohttp.ClientSession() as session:
+        # Example for MESSAGE_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/message",
+                json={"user_id": message.author.id, "content": message.content},
+        ) as response:
+            chatbot_response = await response.text()
+    num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
+    await message.channel.typing()
+    for i in range(num_messages + 1):
+        await message.channel.typing()
+        await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
+    if ENABLE_SLEEP:
+        await asyncio.sleep(len(chatbot_response) * 0.07)
+
 
 
 

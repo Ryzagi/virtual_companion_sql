@@ -62,7 +62,6 @@ class GPT3Conversation:
         )
 
         self._tone_processor = ConversationToneHandler()
-        self._tone = DEFAULT_FRIENDLY_TONE
         self._debug = False
 
     @classmethod
@@ -102,7 +101,7 @@ class GPT3Conversation:
 
         Returns: None
         """
-        self._tone = self._tone_processor(tone)
+        self._config.tone = self._tone_processor(tone)
 
     def ask(self, user_input: str) -> str:
         """
@@ -116,7 +115,7 @@ class GPT3Conversation:
         output = self._conversation.predict(
             **{
                 self._prompt.user_input_key: user_input,
-                self._prompt.conversation_tone_key: self._tone,
+                self._prompt.conversation_tone_key: self._config.tone,
                 self._prompt.memory_key: self._memory,
             },
         )

@@ -29,6 +29,7 @@ intents.members = True
 bot = Bot(command_prefix='/', intents=intents)
 MAX_MESSAGE_LENGTH = 2000
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -263,13 +264,12 @@ conversation_states = {}
 
 @bot.event
 async def on_message(message: Message) -> None:
+    author_id = message.author.id
 
+    if message.author == bot.user:
+        return
     # Only respond to direct messages
     if isinstance(message.channel, discord.DMChannel):
-        author_id = message.author.id
-
-        if message.author == bot.user:
-            return
         if author_id not in conversation_states:
             # update conversation state
             if message.content.startswith('/start'):
@@ -385,12 +385,11 @@ async def on_message(message: Message) -> None:
                     json={"user_id": message.author.id, "content": message.content},
             ) as response:
                 chatbot_response = await response.text()
-
         num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
         await message.channel.typing()
         for i in range(num_messages + 1):
             await message.channel.typing()
-            await message.channel.send(chatbot_response[i * 4000: (i + 1) * 4000])
+            await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
 
         if ENABLE_SLEEP:
             await asyncio.sleep(len(chatbot_response) * 0.07)

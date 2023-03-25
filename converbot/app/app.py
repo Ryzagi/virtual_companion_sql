@@ -70,7 +70,6 @@ async def new_companion(request: NewCompanion):
     mood = request.mood
 
     context = (
-        f"Here's the information about your companion:\n"
         f"Name: {name}\n"
         f"Age: {age}\n"
         f"Gender: {gender}\n"
@@ -80,8 +79,9 @@ async def new_companion(request: NewCompanion):
         f"Relationship status: {relationship}\n"
         f"Personality: {mood}\n"
     )
+    intro = f"This is the role you will play in the conversation:\n\n"
     conversation = create_conversation(
-        prompt=PROMPT_GENERATOR(context),
+        prompt=PROMPT_GENERATOR(intro + context),
         tone=mood,
         config_path=Path(os.environ.get('MODEL_CONFIG_PATH'))
     )

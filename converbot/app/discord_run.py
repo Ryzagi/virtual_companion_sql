@@ -346,7 +346,8 @@ async def on_message(message: Message) -> None:
                     },
             ) as response:
                 context = await response.text()
-        await message.channel.send(context)
+        intro = "Here's the information about your companion:\n\n"
+        await message.channel.send(intro + context)
         # Try to handle context
         await message.channel.typing()
         await message.channel.send("Thank you! Bot information has been saved. One moment...")

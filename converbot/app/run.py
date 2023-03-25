@@ -222,7 +222,9 @@ async def start(message: types.Message):
                     },
             ) as response:
                 context = await response.text()
-        await bot.send_message(message.from_user.id, text=context, reply_markup=DEFAULT_KEYBOARD)
+
+        intro = "Here's the information about your companion:\n\n"
+        await bot.send_message(message.from_user.id, text=intro + context, reply_markup=DEFAULT_KEYBOARD)
         # Try to handle context
         await state.finish()
         await bot.send_message(

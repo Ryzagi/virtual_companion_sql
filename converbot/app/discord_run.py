@@ -352,7 +352,7 @@ async def on_message(message: Message) -> None:
     # Check if companion exists
     async with aiohttp.ClientSession() as session:
         # Example for MESSAGE_ENDPOINT
-        async with session.post(
+        async with session.get(
                 "http://localhost:8000/api/SpeechSynthesizer/is_conversation_exists",
                 json={"user_id": message.author.id},
         ) as response:

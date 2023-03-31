@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+from io import BytesIO
 from pathlib import Path
 from converbot.constants import PROD_ENV, DEV_ENV
 from enum import Enum
@@ -218,7 +219,8 @@ async def selfie(message: Message):
             try:
                 response_data = await response.json()
                 image_data = base64.b64decode(response_data['image'])
-                await message.channel.send(file=discord.File(image_data))
+                image_buffer = BytesIO(image_data)
+                await message.channel.send(file=discord.File(image_buffer, f'selfie_{message.author.id}.png'))
             except Exception as e:
                 logging.exception(e)
                 await message.channel.send("Failed to send image to user. Please try again later.")

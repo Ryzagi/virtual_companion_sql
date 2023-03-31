@@ -61,15 +61,10 @@ args = parse_args()
 
 IS_DEBUG = False
 
-questions = {
-    'What is your name?': 'age',
-    'How old are you?': 'gender',
-    'What is your gender?': 'interest',
-    'What are your interests?': 'done'
-}
 
 # Define the state of each user's conversation
 conversation_states = {}
+
 
 def try_(func):
     async def try_except(message):
@@ -92,7 +87,6 @@ def try_(func):
         return None
 
     return try_except
-
 
 
 @bot.command(name='companions_list')
@@ -123,8 +117,6 @@ async def companions_list(message: Message):
     for i in range(num_messages + 1):
         await message.channel.typing()
         await message.channel.send(message_bot_descriptions[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
-
-
 
 
 @bot.command(name='load_conversation')
@@ -199,8 +191,12 @@ async def debug(message: Message):
 
         await message.channel.send("Please, provide initial context.")
 
+    num_messages = len(conversation) // MAX_MESSAGE_LENGTH
+    await message.channel.typing()
+    for i in range(num_messages + 1):
+        await message.channel.typing()
+        await message.channel.send(conversation[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
 
-    await message.channel.send(conversation)
 
 
 async def toggle_sleep(message: Message) -> None:
@@ -270,6 +266,20 @@ async def on_message(message: Message) -> None:
     if message.content.startswith('/start'):
         await start(message)
         return
+    async with aiohttp.ClientSession() as session:
+        # Example for MESSAGE_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/message",
+                json={"user_id": message.author.id, "content": message.content},
+        ) as response:
+            chatbot_response = await response.text()
+    num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
+    await message.channel.typing()
+    for i in range(num_messages + 1):
+        await message.channel.typing()
+        await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
+    if ENABLE_SLEEP:
+        await asyncio.sleep(len(chatbot_response) * 0.07)
 
     if author_id not in conversation_states:
         await message.channel.send("Please enter /start to begin.")
@@ -355,20 +365,7 @@ async def on_message(message: Message) -> None:
         return
 
 
-    async with aiohttp.ClientSession() as session:
-        # Example for MESSAGE_ENDPOINT
-        async with session.post(
-                "http://localhost:8000/api/SpeechSynthesizer/message",
-                json={"user_id": message.author.id, "content": message.content},
-        ) as response:
-            chatbot_response = await response.text()
-    num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
-    await message.channel.typing()
-    for i in range(num_messages + 1):
-        await message.channel.typing()
-        await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
-    if ENABLE_SLEEP:
-        await asyncio.sleep(len(chatbot_response) * 0.07)
+
 
 
 

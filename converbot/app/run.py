@@ -58,6 +58,8 @@ dispatcher = Dispatcher(bot, storage=storage)
 
 ENABLE_SLEEP =True
 
+MAX_MESSAGE_LENGTH = 4000
+
 DEFAULT_KEYBOARD = types.ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton("/start")], [KeyboardButton("/debug")], [KeyboardButton("/companions_list")]],
     resize_keyboard=True,
@@ -268,10 +270,15 @@ async def companions_list(message: types.Message):
 
     message_bot_descriptions = "\n\n".join(bot_description_output)
 
-    await bot.send_message(
-        message.from_user.id,
-        text=message_bot_descriptions
-    )
+    num_messages = len(message_bot_descriptions) // MAX_MESSAGE_LENGTH
+    for i in range(num_messages + 1):
+        await bot.send_chat_action(
+            message.from_user.id, action=types.ChatActions.TYPING
+        )
+        await bot.send_message(
+            message.from_user.id,
+            text=message_bot_descriptions[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH],
+        )
 
 
 @dispatcher.message_handler(commands=["load_conversation"])
@@ -354,9 +361,16 @@ async def debug(message: types.Message):
             message.from_user.id, text="Please, provide initial context."
         )
 
-    await bot.send_message(
-        message.from_user.id, text=conversation
-    )
+    num_messages = len(conversation) // MAX_MESSAGE_LENGTH
+    for i in range(num_messages + 1):
+        await bot.send_chat_action(
+            message.from_user.id, action=types.ChatActions.TYPING
+        )
+        await bot.send_message(
+            message.from_user.id,
+            text=conversation[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH],
+        )
+
 
 @dispatcher.message_handler(commands=["sleep"])
 async def toggle_sleep(message: types.Message) -> None:
@@ -399,20 +413,21 @@ async def handle_message(message: types.Message) -> None:
                 json={"user_id": message.from_user.id, "content": message.text},
         ) as response:
             chatbot_response = await response.text()
-    num_messages = len(chatbot_response) // 4000
+    num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
 
     await bot.send_chat_action(
         message.from_user.id, action=types.ChatActions.TYPING
     )
     if ENABLE_SLEEP:
         await asyncio.sleep(len(chatbot_response) * 0.07)
-    await bot.send_chat_action(
-        message.from_user.id, action=types.ChatActions.TYPING
-    )
+
     for i in range(num_messages + 1):
+        await bot.send_chat_action(
+            message.from_user.id, action=types.ChatActions.TYPING
+        )
         await bot.send_message(
             message.from_user.id,
-            text=chatbot_response[i * 4000: (i + 1) * 4000],
+            text=chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH],
         )
 
     #await bot.send_message(message.from_user.id, text=chatbot_response, reply_markup=DEFAULT_KEYBOARD)

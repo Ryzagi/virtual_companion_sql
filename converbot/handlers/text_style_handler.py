@@ -1,5 +1,3 @@
-import os
-
 from langchain import LLMChain, OpenAI, PromptTemplate
 
 

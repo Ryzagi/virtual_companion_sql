@@ -10,6 +10,10 @@ class CompanionListOut(BaseModel):
     companion_id: str
 
 
+class SelfieRequest(BaseModel):
+    user_id: int
+
+
 class NewUser(BaseModel):
     user_id: int
 
@@ -47,4 +51,3 @@ class Message(BaseModel):
 
 class Debug(BaseModel):
     user_id: int
-

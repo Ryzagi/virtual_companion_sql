@@ -1,8 +1,10 @@
 import argparse
 import asyncio
+import base64
 import json
 import os
 from pathlib import Path
+import logging
 
 import aiohttp
 import aioschedule
@@ -369,6 +371,24 @@ async def toggle_sleep(message: types.Message) -> None:
     await bot.send_message(
         message.from_user.id, text=f"Sleep functionality {'enabled' if ENABLE_SLEEP else 'disabled'}"
     )
+
+@dispatcher.message_handler(commands=["selfie"])
+async def selfie(message: types.Message) -> None:
+    async with aiohttp.ClientSession() as session:
+        # Example for DEBUG_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/selfie",
+                json={"user_id": message.from_user.id},
+        ) as response:
+            try:
+                response_data = await response.json()
+                image_data = base64.b64decode(response_data['image'])
+                #image_bytes = io.BytesIO(image_data)
+                await bot.send_photo(chat_id=message.chat.id, photo=image_data)
+            except Exception as e:
+                logging.exception(e)
+                await message.reply("Failed to send image to user. Please try again later.")
+
 
 @dispatcher.message_handler()
 @try_

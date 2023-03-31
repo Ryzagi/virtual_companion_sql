@@ -266,21 +266,25 @@ async def on_message(message: Message) -> None:
     if message.content.startswith('/start'):
         await start(message)
         return
-    async with aiohttp.ClientSession() as session:
-        # Example for MESSAGE_ENDPOINT
-        async with session.post(
-                "http://localhost:8000/api/SpeechSynthesizer/message",
-                json={"user_id": message.author.id, "content": message.content},
-        ) as response:
-            chatbot_response = await response.text()
-            status_code = response.status
 
-            if status_code == 406:
-                await message.channel.send("Please enter /start to begin.")
-                return
+    # Conversation is already loaded
+    if author_id not in conversation_states:
 
-    conversation_states[author_id] = {}
-    conversation_states[author_id]['state'] = ConversationState.FINISHED
+        async with aiohttp.ClientSession() as session:
+            # Example for MESSAGE_ENDPOINT
+            async with session.post(
+                    "http://localhost:8000/api/SpeechSynthesizer/message",
+                    json={"user_id": message.author.id, "content": message.content},
+            ) as response:
+                chatbot_response = await response.text()
+                status_code = response.status
+
+                if status_code == 406:
+                    await message.channel.send("Please enter /start to begin.")
+                    return
+
+        conversation_states[author_id] = {}
+        conversation_states[author_id]['state'] = ConversationState.FINISHED
 
     num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
     await message.channel.typing()

@@ -68,7 +68,7 @@ async def new_user(request: NewUser):
 @app.post(SELFIE_ENDPOINT)
 async def generate_selfie(request: SelfieRequest):
     endpoint_url = "https://api2.makeai.run/v1/api/infer/txt2img"
-    headers = {"token": "5473e92142294dc88e0d39d6a7e40843"}
+    headers = {"token": "92d20745-f419-43f8-92be-d6c3724b2c63"}
     conv_id = Path(CONVERSATIONS.get_conversation_id(request.user_id)).with_suffix('.json')
     path_to_json = CONVERSATION_SAVE_DIR / str(request.user_id) / conv_id
     bot_description = read_json_file(path_to_json)["bot_description"]

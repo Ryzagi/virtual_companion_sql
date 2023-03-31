@@ -360,7 +360,7 @@ async def debug(message: types.Message):
         await bot.send_message(
             message.from_user.id, text="Please, provide initial context."
         )
-
+        return
     num_messages = len(conversation) // MAX_MESSAGE_LENGTH
     for i in range(num_messages + 1):
         await bot.send_chat_action(

@@ -37,7 +37,7 @@ os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
 
 
-HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+#HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
 CONVERSATIONS.load_conversations()
@@ -205,13 +205,13 @@ async def handle_message(request: Message):
         return Response(status_code=status.HTTP_406_NOT_ACCEPTABLE)
     chatbot_response = conversation.ask(request.content)
 
-    HISTORY_WRITER.write_message(
-        user_id=request.user_id,
-        conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),
-        user_message=request.content,
-        chatbot_message=chatbot_response,
-        env=os.environ.get('ENVIRONMENT'),
-    )
+    #HISTORY_WRITER.write_message(
+    #    user_id=request.user_id,
+    #    conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),
+    #    user_message=request.content,
+    #    chatbot_message=chatbot_response,
+    #    env=os.environ.get('ENVIRONMENT'),
+    #)
     CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
     return PlainTextResponse(chatbot_response)
 

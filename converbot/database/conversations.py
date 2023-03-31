@@ -64,7 +64,6 @@ class ConversationDB:
         conversation_save_path = conversation_save_path.with_suffix(".json")
         self._user_to_conversation[user_id].save(conversation_save_path, bot_description=chatbot_description)
 
-
     def serialize_conversations(self) -> None:
         """
         Serialize the conversations to disk.
@@ -105,7 +104,7 @@ class ConversationDB:
     def get_companion_descriptions_list(
             self,
             user_id: int
-    ) -> Union[List[Tuple[str, str]], str]:
+    ) -> Union[List[Tuple[str, str]], None]:
         """
         Display the list of companion descriptions by user_id.
 

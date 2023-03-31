@@ -127,7 +127,8 @@ async def new_companion(request: NewCompanion):
         config_path=Path(os.environ.get('MODEL_CONFIG_PATH'))
     )
     CONVERSATIONS.add_conversation(user_id, conversation, context)
-    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    CONVERSATIONS.serialize_conversations()
+    #CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
     return PlainTextResponse(context)
 
 
@@ -209,8 +210,8 @@ async def handle_message(request: Message):
         chatbot_message=chatbot_response,
         env=os.environ.get('ENVIRONMENT'),
     )
-    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
-
+    #CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    CONVERSATIONS.serialize_conversations()
     return PlainTextResponse(chatbot_response)
 
 

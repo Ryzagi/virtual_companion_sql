@@ -1,18 +1,6 @@
-import argparse
-import asyncio
-import base64
-import json
-import os
 from pathlib import Path
 
 import aiohttp
-import aioschedule
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import KeyboardButton
-from aiogram.utils import executor
 from starlette.responses import PlainTextResponse
 
 from converbot.app.bot_utils import create_conversation
@@ -36,7 +24,7 @@ os.environ['MODEL_CONFIG_PATH'] = '../../configs/model_config.json'
 os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
 
-# HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
 CONVERSATIONS.load_conversations()
@@ -215,12 +203,12 @@ async def handle_message(request: Message):
         return Response(status_code=status.HTTP_406_NOT_ACCEPTABLE)
     chatbot_response = conversation.ask(request.content)
 
-    # HISTORY_WRITER.write_message(
-    #    user_id=request.user_id,
-    #    conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),
-    #    user_message=request.content,
-    #    chatbot_message=chatbot_response,
-    #    env=os.environ.get('ENVIRONMENT'),
-    # )
+    HISTORY_WRITER.write_message(
+       user_id=request.user_id,
+       conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),
+       user_message=request.content,
+       chatbot_message=chatbot_response,
+       env=os.environ.get('ENVIRONMENT'),
+    )
     CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
     return PlainTextResponse(chatbot_response)

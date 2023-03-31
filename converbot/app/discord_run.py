@@ -1,24 +1,12 @@
 import argparse
 import asyncio
-import json
-import os
+import logging
 from pathlib import Path
-
-import aiohttp
-import aioschedule
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import KeyboardButton
-from aiogram.utils import executor
 from converbot.constants import PROD_ENV, DEV_ENV
-
+from enum import Enum
 
 import discord
-from discord.ext import commands
-from discord.ext.commands import Bot, Context
-from discord.ext import tasks
+from discord.ext.commands import Bot
 from discord import Message
 
 
@@ -206,7 +194,7 @@ async def debug(message: Message):
     await message.channel.send(conversation)
 
 
-async def toggle_sleep(message) -> None:
+async def toggle_sleep(message: Message) -> None:
     #async with session.post(
     #        "http://localhost:8000/api/SpeechSynthesizer/sleep",
     #        json={"user_id": message.from_user.id},
@@ -217,6 +205,23 @@ async def toggle_sleep(message) -> None:
     ENABLE_SLEEP = not ENABLE_SLEEP
 
     await message.channel.send(f"Sleep functionality {'enabled' if ENABLE_SLEEP else 'disabled'}")
+import aiohttp
+import base64
+
+@bot.command(name='selfie')
+async def selfie(message: Message):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/selfie",
+                json={"user_id": message.author.id},
+        ) as response:
+            try:
+                response_data = await response.json()
+                image_data = base64.b64decode(response_data['image'])
+                await message.send(file=discord.File(image_data, 'selfie.png'))
+            except Exception as e:
+                logging.exception(e)
+                await message.send("Failed to send image to user. Please try again later.")
 
 @bot.command(name='start')
 async def start(ctx):
@@ -231,8 +236,7 @@ async def start(ctx):
     await ctx.channel.send("What is the name you want to give your companion?")
 
 
-from enum import Enum
-from discord.ext import commands
+
 
 
 class ConversationState(Enum):
@@ -373,6 +377,9 @@ async def on_message(message: Message) -> None:
         return
     if message.content.startswith('/sleep'):
         await toggle_sleep(message)
+        return
+    if message.content.startswith('/selfie'):
+        await selfie(message)
         return
     async with aiohttp.ClientSession() as session:
         # Example for MESSAGE_ENDPOINT

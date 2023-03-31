@@ -383,7 +383,6 @@ async def selfie(message: types.Message) -> None:
             try:
                 response_data = await response.json()
                 image_data = base64.b64decode(response_data['image'])
-                #image_bytes = io.BytesIO(image_data)
                 await bot.send_photo(chat_id=message.chat.id, photo=image_data)
             except Exception as e:
                 logging.exception(e)

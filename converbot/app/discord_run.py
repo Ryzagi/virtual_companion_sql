@@ -279,6 +279,7 @@ async def on_message(message: Message) -> None:
                 await message.channel.send("Please enter /start to begin.")
                 return
 
+    conversation_states[author_id] = {}
     conversation_states[author_id]['state'] = ConversationState.FINISHED
 
     num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH

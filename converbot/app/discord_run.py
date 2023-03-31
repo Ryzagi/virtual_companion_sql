@@ -218,10 +218,10 @@ async def selfie(message: Message):
             try:
                 response_data = await response.json()
                 image_data = base64.b64decode(response_data['image'])
-                await message.send(file=discord.File(image_data, 'selfie.png'))
+                await message.channel.send(file=discord.File(image_data, 'selfie.png'))
             except Exception as e:
                 logging.exception(e)
-                await message.send("Failed to send image to user. Please try again later.")
+                await message.channel.send("Failed to send image to user. Please try again later.")
 
 @bot.command(name='start')
 async def start(ctx):

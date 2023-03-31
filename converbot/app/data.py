@@ -51,3 +51,7 @@ class Message(BaseModel):
 
 class Debug(BaseModel):
     user_id: int
+
+
+class CompanionExists(BaseModel):
+    user_id: int

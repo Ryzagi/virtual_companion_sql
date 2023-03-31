@@ -349,11 +349,32 @@ async def on_message(message: Message) -> None:
         await start(message)
         return
 
-    await do_state_stuff(message)
+    # Check if companion exists
+    async with aiohttp.ClientSession() as session:
+        # Example for MESSAGE_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/is_conversation_exists",
+                json={"user_id": message.author.id},
+        ) as response:
+            output = await response.json()
+            is_conversation_exists = output['exists']
 
+    if not is_conversation_exists:
+        if author_id not in conversation_states:
+            await message.channel.send("Please enter /start to begin.")
+            return
+        if conversation_states[author_id]['state'] != ConversationState.FINISHED:
+            await do_state_stuff(message)
+            return
 
-    # Conversation is already loaded
-    if author_id not in conversation_states:
+    else:
+        if author_id not in conversation_states:
+            conversation_states[author_id] = {}
+            conversation_states[author_id]['state'] = ConversationState.FINISHED
+
+        if conversation_states[author_id]['state'] != ConversationState.FINISHED:
+            await do_state_stuff(message)
+            return
 
         async with aiohttp.ClientSession() as session:
             # Example for MESSAGE_ENDPOINT
@@ -362,22 +383,15 @@ async def on_message(message: Message) -> None:
                     json={"user_id": message.author.id, "content": message.content},
             ) as response:
                 chatbot_response = await response.text()
-                status_code = response.status
 
-                if status_code == 406:
-                    await message.channel.send("Please enter /start to begin.")
-                    return
-
-        conversation_states[author_id] = {}
-        conversation_states[author_id]['state'] = ConversationState.FINISHED
-
-    num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
-    await message.channel.typing()
-    for i in range(num_messages + 1):
+        num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
         await message.channel.typing()
-        await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
-    if ENABLE_SLEEP:
-        await asyncio.sleep(len(chatbot_response) * 0.07)
+        for i in range(num_messages + 1):
+            await message.channel.typing()
+            await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
+        if ENABLE_SLEEP:
+            await asyncio.sleep(len(chatbot_response) * 0.07)
+
 
 
 if __name__ == "__main__":

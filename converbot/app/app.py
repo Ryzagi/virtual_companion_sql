@@ -17,7 +17,7 @@ from starlette.responses import PlainTextResponse
 
 from converbot.app.bot_utils import create_conversation
 from converbot.app.data import CompanionList, SwitchCompanion, DeleteCompanion, DeleteAllCompanions, Debug, Message, \
-    NewCompanion, NewUser, CompanionListOut, SelfieRequest
+    NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists
 from converbot.constants import PROD_ENV, DEV_ENV, CONVERSATION_SAVE_DIR
 from converbot.database.conversations import ConversationDB
 from converbot.database.history_writer import SQLHistoryWriter
@@ -36,8 +36,7 @@ os.environ['MODEL_CONFIG_PATH'] = '../../configs/model_config.json'
 os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
 
-
-#HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+# HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
 CONVERSATIONS.load_conversations()
@@ -56,6 +55,7 @@ NEW_USER_ENDPOINT = "/api/SpeechSynthesizer/new_user"
 NEW_COMPANION_ENDPOINT = "/api/SpeechSynthesizer/new_companion"
 SLEEP_ENDPOINT = "/api/SpeechSynthesizer/sleep"
 SELFIE_ENDPOINT = "/api/SpeechSynthesizer/selfie"
+CONVERSATION_EXISTS_ENDPOINT = "/api/SpeechSynthesizer/is_conversation_exists"
 
 SELFIE_HANDLER = SelfieStyleHandler()
 
@@ -63,6 +63,15 @@ SELFIE_HANDLER = SelfieStyleHandler()
 @app.post(NEW_USER_ENDPOINT)
 async def new_user(request: NewUser):
     pass
+
+
+@app.get(CONVERSATION_EXISTS_ENDPOINT)
+async def is_conversation_exists(request: CompanionExists):
+    conversation = CONVERSATIONS.get_conversation(request.user_id)
+    exists = True
+    if conversation is None:
+        exists = False
+    return {"exists": exists}
 
 
 @app.post(SELFIE_ENDPOINT)
@@ -180,8 +189,9 @@ async def debug(request: Debug):
 
     return PlainTextResponse(text)
 
-#@app.post(SLEEP_ENDPOINT)
-#async def toggle_sleep(request: Message) -> None:
+
+# @app.post(SLEEP_ENDPOINT)
+# async def toggle_sleep(request: Message) -> None:
 #    global ENABLE_SLEEP
 #    enable_sleep = not ENABLE_SLEEP
 #    text=f"Sleep functionality {'enabled' if enable_sleep else 'disabled'}"
@@ -205,14 +215,12 @@ async def handle_message(request: Message):
         return Response(status_code=status.HTTP_406_NOT_ACCEPTABLE)
     chatbot_response = conversation.ask(request.content)
 
-    #HISTORY_WRITER.write_message(
+    # HISTORY_WRITER.write_message(
     #    user_id=request.user_id,
     #    conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),
     #    user_message=request.content,
     #    chatbot_message=chatbot_response,
     #    env=os.environ.get('ENVIRONMENT'),
-    #)
+    # )
     CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
     return PlainTextResponse(chatbot_response)
-
-

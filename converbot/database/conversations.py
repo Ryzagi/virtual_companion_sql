@@ -195,6 +195,9 @@ class ConversationDB:
                     str(user_id.name)
                 ] = conversation_id
 
+                bot_desc = json.loads(checkpoint.read_text())
+                self._conversation_id_to_bot_description[conversation_id] = bot_desc['bot_description']
+
     def __del__(self) -> None:
         """
         Serialize the conversations to disk when the object is deleted.

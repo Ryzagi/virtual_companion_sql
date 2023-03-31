@@ -1,12 +1,16 @@
 import argparse
 import asyncio
 import logging
+import aiohttp
+import base64
+import discord
+
 from io import BytesIO
 from pathlib import Path
-from converbot.constants import PROD_ENV, DEV_ENV
-from enum import Enum
 
-import discord
+from converbot.app.bot_utils import create_conversation_state, ConversationState
+from converbot.constants import PROD_ENV, DEV_ENV
+
 from discord.ext.commands import Bot
 from discord import Message
 
@@ -114,8 +118,12 @@ async def companions_list(message: Message):
 
     message_bot_descriptions = "\n\n".join(bot_description_output)
 
+    num_messages = len(message_bot_descriptions) // MAX_MESSAGE_LENGTH
+    await message.channel.typing()
+    for i in range(num_messages + 1):
+        await message.channel.typing()
+        await message.channel.send(message_bot_descriptions[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
 
-    await message.channel.send(message_bot_descriptions)
 
 
 
@@ -196,18 +204,11 @@ async def debug(message: Message):
 
 
 async def toggle_sleep(message: Message) -> None:
-    #async with session.post(
-    #        "http://localhost:8000/api/SpeechSynthesizer/sleep",
-    #        json={"user_id": message.from_user.id},
-    #) as response:
-    #    mode = await response.text()
     global ENABLE_SLEEP
 
     ENABLE_SLEEP = not ENABLE_SLEEP
 
     await message.channel.send(f"Sleep functionality {'enabled' if ENABLE_SLEEP else 'disabled'}")
-import aiohttp
-import base64
 
 @bot.command(name='selfie')
 async def selfie(message: Message):
@@ -237,36 +238,6 @@ async def start(ctx):
     await ctx.channel.typing()
     await ctx.channel.send("What is the name you want to give your companion?")
 
-
-
-
-
-class ConversationState(Enum):
-    NAME = 0
-    AGE = 1
-    GENDER = 2
-    INTEREST = 3
-    PROFESSION = 4
-    APPEARANCE = 5
-    RELATIONSHIP = 6
-    MOOD = 7
-    FINISHED = 8
-
-
-def create_conversation_state():
-    return {
-        'name': None,
-        'age': None,
-        'gender': None,
-        'interest': None,
-        'profession': None,
-        'appearance': None,
-        'relationship': None,
-        'mood': None,
-        'state': ConversationState.NAME
-    }
-
-
 @bot.event
 async def on_message(message: Message) -> None:
     author_id = message.author.id
@@ -274,6 +245,27 @@ async def on_message(message: Message) -> None:
     if message.author == bot.user:
         return
     if not isinstance(message.channel, discord.DMChannel):
+        return
+    if message.content.startswith('/debug'):
+        await debug(message)
+        return
+    if message.content.startswith('/companions_list'):
+        await companions_list(message)
+        return
+    if message.content.startswith('/delete_all_conversations'):
+        await delete_all_conversations(message)
+        return
+    if message.content.startswith('/load_conversation'):
+        await load_conversation(message)
+        return
+    if message.content.startswith('/delete_conversation'):
+        await delete_conversation(message)
+        return
+    if message.content.startswith('/sleep'):
+        await toggle_sleep(message)
+        return
+    if message.content.startswith('/selfie'):
+        await selfie(message)
         return
     if message.content.startswith('/start'):
         await start(message)
@@ -362,27 +354,7 @@ async def on_message(message: Message) -> None:
         conversation_states[author_id]['state'] = ConversationState.FINISHED
         return
 
-    if message.content.startswith('/debug'):
-        await debug(message)
-        return
-    if message.content.startswith('/companions_list'):
-        await companions_list(message)
-        return
-    if message.content.startswith('/delete_all_conversations'):
-        await delete_all_conversations(message)
-        return
-    if message.content.startswith('/load_conversation'):
-        await load_conversation(message)
-        return
-    if message.content.startswith('/delete_conversation'):
-        await delete_conversation(message)
-        return
-    if message.content.startswith('/sleep'):
-        await toggle_sleep(message)
-        return
-    if message.content.startswith('/selfie'):
-        await selfie(message)
-        return
+
     async with aiohttp.ClientSession() as session:
         # Example for MESSAGE_ENDPOINT
         async with session.post(

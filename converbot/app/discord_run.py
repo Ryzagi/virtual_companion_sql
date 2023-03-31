@@ -273,6 +273,11 @@ async def on_message(message: Message) -> None:
                 json={"user_id": message.author.id, "content": message.content},
         ) as response:
             chatbot_response = await response.text()
+            status_code = response.status
+
+            if status_code == 406:
+                await message.channel.send("Please enter /start to begin.")
+
     num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
     await message.channel.typing()
     for i in range(num_messages + 1):
@@ -280,10 +285,6 @@ async def on_message(message: Message) -> None:
         await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
     if ENABLE_SLEEP:
         await asyncio.sleep(len(chatbot_response) * 0.07)
-
-    if author_id not in conversation_states:
-        await message.channel.send("Please enter /start to begin.")
-        return
 
     state = conversation_states[author_id]['state']
     if state == ConversationState.NAME:

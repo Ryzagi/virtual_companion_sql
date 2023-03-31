@@ -68,7 +68,7 @@ async def new_user(request: NewUser):
 @app.post(SELFIE_ENDPOINT)
 async def generate_selfie(request: SelfieRequest):
     endpoint_url = "https://api2.makeai.run/v1/api/infer/txt2img"
-    headers = {"token": "92d20745-f419-43f8-92be-d6c3724b2c63"}
+    headers = {"token": "5473e92142294dc88e0d39d6a7e40843"}
     conv_id = Path(CONVERSATIONS.get_conversation_id(request.user_id)).with_suffix('.json')
     path_to_json = CONVERSATION_SAVE_DIR / str(request.user_id) / conv_id
     bot_description = read_json_file(path_to_json)["bot_description"]
@@ -201,7 +201,10 @@ async def handle_message(request: Message):
         return PlainTextResponse(tone_info)
 
     conversation = CONVERSATIONS.get_conversation(request.user_id)
+    if conversation is None:
+        return Response(status_code=status.HTTP_406_NOT_ACCEPTABLE)
     chatbot_response = conversation.ask(request.content)
+
     HISTORY_WRITER.write_message(
         user_id=request.user_id,
         conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),

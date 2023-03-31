@@ -234,66 +234,9 @@ async def start(ctx):
     await ctx.channel.typing()
     await ctx.channel.send("What is the name you want to give your companion?")
 
-@bot.event
-async def on_message(message: Message) -> None:
+
+async def do_state_stuff(message):
     author_id = message.author.id
-
-    if message.author == bot.user:
-        return
-    if not isinstance(message.channel, discord.DMChannel):
-        return
-    if message.content.startswith('/debug'):
-        await debug(message)
-        return
-    if message.content.startswith('/companions_list'):
-        await companions_list(message)
-        return
-    if message.content.startswith('/delete_all_conversations'):
-        await delete_all_conversations(message)
-        return
-    if message.content.startswith('/load_conversation'):
-        await load_conversation(message)
-        return
-    if message.content.startswith('/delete_conversation'):
-        await delete_conversation(message)
-        return
-    if message.content.startswith('/sleep'):
-        await toggle_sleep(message)
-        return
-    if message.content.startswith('/selfie'):
-        await selfie(message)
-        return
-    if message.content.startswith('/start'):
-        await start(message)
-        return
-
-    # Conversation is already loaded
-    if author_id not in conversation_states:
-
-        async with aiohttp.ClientSession() as session:
-            # Example for MESSAGE_ENDPOINT
-            async with session.post(
-                    "http://localhost:8000/api/SpeechSynthesizer/message",
-                    json={"user_id": message.author.id, "content": message.content},
-            ) as response:
-                chatbot_response = await response.text()
-                status_code = response.status
-
-                if status_code == 406:
-                    await message.channel.send("Please enter /start to begin.")
-                    return
-
-        conversation_states[author_id] = {}
-        conversation_states[author_id]['state'] = ConversationState.FINISHED
-
-    num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
-    await message.channel.typing()
-    for i in range(num_messages + 1):
-        await message.channel.typing()
-        await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
-    if ENABLE_SLEEP:
-        await asyncio.sleep(len(chatbot_response) * 0.07)
-
     state = conversation_states[author_id]['state']
     if state == ConversationState.NAME:
         conversation_states[author_id]['name'] = message.content
@@ -373,6 +316,68 @@ async def on_message(message: Message) -> None:
         conversation_states[author_id]['state'] = ConversationState.FINISHED
         return
 
+@bot.event
+async def on_message(message: Message) -> None:
+    author_id = message.author.id
+
+    if message.author == bot.user:
+        return
+    if not isinstance(message.channel, discord.DMChannel):
+        return
+    if message.content.startswith('/debug'):
+        await debug(message)
+        return
+    if message.content.startswith('/companions_list'):
+        await companions_list(message)
+        return
+    if message.content.startswith('/delete_all_conversations'):
+        await delete_all_conversations(message)
+        return
+    if message.content.startswith('/load_conversation'):
+        await load_conversation(message)
+        return
+    if message.content.startswith('/delete_conversation'):
+        await delete_conversation(message)
+        return
+    if message.content.startswith('/sleep'):
+        await toggle_sleep(message)
+        return
+    if message.content.startswith('/selfie'):
+        await selfie(message)
+        return
+    if message.content.startswith('/start'):
+        await start(message)
+        return
+
+    await do_state_stuff(message)
+
+
+    # Conversation is already loaded
+    if author_id not in conversation_states:
+
+        async with aiohttp.ClientSession() as session:
+            # Example for MESSAGE_ENDPOINT
+            async with session.post(
+                    "http://localhost:8000/api/SpeechSynthesizer/message",
+                    json={"user_id": message.author.id, "content": message.content},
+            ) as response:
+                chatbot_response = await response.text()
+                status_code = response.status
+
+                if status_code == 406:
+                    await message.channel.send("Please enter /start to begin.")
+                    return
+
+        conversation_states[author_id] = {}
+        conversation_states[author_id]['state'] = ConversationState.FINISHED
+
+    num_messages = len(chatbot_response) // MAX_MESSAGE_LENGTH
+    await message.channel.typing()
+    for i in range(num_messages + 1):
+        await message.channel.typing()
+        await message.channel.send(chatbot_response[i * MAX_MESSAGE_LENGTH: (i + 1) * MAX_MESSAGE_LENGTH])
+    if ENABLE_SLEEP:
+        await asyncio.sleep(len(chatbot_response) * 0.07)
 
 
 if __name__ == "__main__":

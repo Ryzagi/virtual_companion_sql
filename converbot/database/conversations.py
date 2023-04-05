@@ -5,6 +5,7 @@ from typing import Dict, Tuple, List, Optional, Union
 
 from converbot.constants import CONVERSATION_SAVE_DIR
 from converbot.core import GPT3Conversation
+from converbot.utils.utils import read_json_file
 
 
 class ConversationDB:
@@ -145,6 +146,25 @@ class ConversationDB:
         file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
         if file_path.exists():
             file_path.unlink()
+            return f"#{conversation_id} companion has been delete."
+        else:
+            return f"#{conversation_id} companion does not exist."
+
+    def delete_conversation_history(
+            self,
+            user_id: int,
+            conversation_id: str
+    ) -> str:
+        file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
+        if file_path.exists():
+            data = read_json_file(file_path)
+            # Modify data dictionary
+            data['memory_buffer'] = []
+            data['memory_moving_summary_buffer'] = ""
+
+            # Write updated data back to file
+            with open(file_path, 'w') as f:
+                json.dump(data, f, indent=4)
             return f"#{conversation_id} conversation ID has been delete."
         else:
             return f"#{conversation_id} conversation ID does not exist."

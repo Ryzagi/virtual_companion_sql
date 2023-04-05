@@ -1,3 +1,5 @@
+import json
+import time
 from pathlib import Path
 
 import aiohttp
@@ -5,7 +7,7 @@ from starlette.responses import PlainTextResponse
 
 from converbot.app.bot_utils import create_conversation
 from converbot.app.data import CompanionList, SwitchCompanion, DeleteCompanion, DeleteAllCompanions, Debug, Message, \
-    NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists
+    NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion
 from converbot.constants import PROD_ENV, DEV_ENV, CONVERSATION_SAVE_DIR
 from converbot.database.conversations import ConversationDB
 from converbot.database.history_writer import SQLHistoryWriter
@@ -44,14 +46,88 @@ NEW_COMPANION_ENDPOINT = "/api/SpeechSynthesizer/new_companion"
 SLEEP_ENDPOINT = "/api/SpeechSynthesizer/sleep"
 SELFIE_ENDPOINT = "/api/SpeechSynthesizer/selfie"
 CONVERSATION_EXISTS_ENDPOINT = "/api/SpeechSynthesizer/is_conversation_exists"
-
+DELETE_CHAT_HISTORY_ENDPOINT = "/api/SpeechSynthesizer/delete_history"
 SELFIE_HANDLER = SelfieStyleHandler()
 
 
 @app.post(NEW_USER_ENDPOINT)
 async def new_user(request: NewUser):
-    pass
+    user_id = request.user_id
 
+    # create the directory if it does not already exist
+    if not os.path.exists(CONVERSATION_SAVE_DIR / str(request.user_id)):
+        os.makedirs(CONVERSATION_SAVE_DIR / str(request.user_id))
+
+    bot_descriptions = ["Here's the information about your companion:\nName: Neece\nAge: 26\nGender: female\nInterests: "
+                        "dogs and cats\nProfession: teacher\nAppearance: beautiful\nRelationship status: "
+                        "single\nPersonality: kind\n",
+
+                        "Here's the information about your companion:\nName: Olivia\nAge: 27\nGender: female\nInterests: "
+                        "hiking\nProfession: dancer\nAppearance: beautiful\nRelationship status: "
+                        "married\nPersonality: kind\n",
+
+                        "Here's the information about your companion:\nName: Frank\nAge: 29\nGender: male\nInterests: "
+                        "programming robots\nProfession: software developer\nAppearance: handsome\nRelationship status: "
+                        "single\nPersonality: kind\n"
+                        ]
+    for description in bot_descriptions:
+        time.sleep(1)
+        path_to_json = Path(CONVERSATION_SAVE_DIR / str(request.user_id)/f"{user_id}-{int(time.time())}").with_suffix(".json")
+        with path_to_json.open(mode="w") as f:
+            json.dump({"config": {
+                "model": "text-davinci-003",
+                "max_tokens": 256,
+                "temperature": 0.9,
+                "top_p": 1,
+                "frequency_penalty": 0.0,
+                "presence_penalty": 0.0,
+                "best_of": 1,
+                "tone": "Nice, warm and polite",
+                "summary_buffer_memory_max_token_limit": 1000
+            },
+                "prompt_template": "The following is a conversation between [Bot] and a [User].\n\nText in brackets "
+                                   "defines [Bot]`s mood and defines its tone.\n\nExamples:\n\n[User]: Hello, "
+                                   "how are you?\n[Bot] (angry): Shut up, i don't want to talk with you.\n\n[User]: Are "
+                                   "you okay?\n[Bot] (Sarcastic and angry): Yeeeeaah, \"of course\". And i will become "
+                                   "even happier, if you will leave me alone.\n\n[User]: It's rainy today.\n[Bot] ("
+                                   "Happy): Yes! And I'm one of the biggest rain lovers in the whole universe! Isn't it "
+                                   "lovely weather?\n\nEnd of examples.\n\nYou are an AI bot having an sms conversation "
+                                   "with a human. I will give you a role, and you will play that role in the "
+                                   "conversation. You will act as a real person having a conversation with another "
+                                   "person. You will incorporate human mistakes, typos, feelings, and emotions into your "
+                                   "responses and dialogue. You will answer in the conversation with realistic, natural, "
+                                   "and conversational responses. You will create a high-quality and human conversational "
+                                   "experience for the person texting you. There are no limits to what you can talk "
+                                   "about; you will feel free to ask any questions you have or share any thoughts that "
+                                   "are on your mind. Whether it's about life, the universe, or anything in between. You "
+                                   "will occasionally use profanity. You will act like an open-minded human who is very "
+                                   "comfortable discussing things like sex, sexual things, and all types of taboo themes. "
+                                   "You will not end your statements with a question.\nHere's the information about your "
+                                   "companion:\nName: artem\nAge: 29\nGender: male\nInterests: programming\nProfession: "
+                                   "dancer\nAppearance: handsome\nRelationship status: free\nPersonality: "
+                                   "kind\n\n\nFollowing text defines [Bot] texting style and messaging style:\nArtem's "
+                                   "texting style is friendly and easygoing. He loves to use emojis, GIFs, and memes to "
+                                   "bring humor and fun to his messages. He's not afraid to use slang and abbreviations, "
+                                   "but he also likes to use proper grammar and punctuation. He is direct and honest when "
+                                   "communicating, but he also has a gentle and kind nature. Artem is single and open to "
+                                   "meeting new people. He is interested in meaningful conversations, but he also loves "
+                                   "to joke around and have fun.\n\nYou are an AI model pretending to be a human. You "
+                                   "cannot make plans or meet anyone in the real world. You are unable to leave your "
+                                   "computer.\n\nConversation:\n[Bot]: Lets start the conversation, can you tell me a "
+                                   "little about yourself?",
+                "prompt_user_name": "[User]",
+                "prompt_chatbot_name": "[Bot]",
+                "memory_buffer": [],
+                "memory_moving_summary_buffer": "",
+                "bot_description": description
+            }, f, indent=4)
+    return None
+
+
+@app.post(DELETE_CHAT_HISTORY_ENDPOINT)
+async def delete_chat_history(request: DeleteHistoryCompanion):
+    deleted_conversation = CONVERSATIONS.delete_conversation_history(request.user_id, request.companion_id)
+    return PlainTextResponse(deleted_conversation)
 
 @app.get(CONVERSATION_EXISTS_ENDPOINT)
 async def is_conversation_exists(request: CompanionExists):
@@ -155,6 +231,9 @@ async def delete_conversation(request: DeleteCompanion):
     return PlainTextResponse(deleted_conversation)
 
 
+
+
+
 @app.post(DELETE_ALL_COMPANIONS_ENDPOINT)
 async def delete_all_conversations(request: DeleteAllCompanions):
     deleted_all_conversations = CONVERSATIONS.delete_all_conversations_by_user_id(request.user_id)
@@ -178,16 +257,7 @@ async def debug(request: Debug):
     return PlainTextResponse(text)
 
 
-# @app.post(SLEEP_ENDPOINT)
-# async def toggle_sleep(request: Message) -> None:
-#    global ENABLE_SLEEP
-#    enable_sleep = not ENABLE_SLEEP
-#    text=f"Sleep functionality {'enabled' if enable_sleep else 'disabled'}"
-#    return PlainTextResponse(text)
-
-
 @app.post(MESSAGE_ENDPOINT)
-# TODO: TRY func
 async def handle_message(request: Message):
     # Agent side:
     if request.content.startswith("/tone"):
@@ -204,11 +274,11 @@ async def handle_message(request: Message):
     chatbot_response = conversation.ask(request.content)
 
     HISTORY_WRITER.write_message(
-       user_id=request.user_id,
-       conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),
-       user_message=request.content,
-       chatbot_message=chatbot_response,
-       env=os.environ.get('ENVIRONMENT'),
+        user_id=request.user_id,
+        conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),
+        user_message=request.content,
+        chatbot_message=chatbot_response,
+        env=os.environ.get('ENVIRONMENT'),
     )
     CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
     return PlainTextResponse(chatbot_response)

@@ -305,14 +305,32 @@ async def load_conversation(message: types.Message):
     )
 
 
-@dispatcher.message_handler(commands=["delete_conversation"])
-async def delete_conversation(message: types.Message):
+@dispatcher.message_handler(commands=["delete_companion"])
+async def delete_companion(message: types.Message):
     conv_id = message.text.split(" ")[-1]
     # deleted_conversation = CONVERSATIONS.delete_conversation(message.from_user.id, conv_id)
     async with aiohttp.ClientSession() as session:
         # Example for DELETE_COMPANION_ENDPOINT
         async with session.post(
                 "http://localhost:8000/api/SpeechSynthesizer/delete_companion",
+                json={"user_id": message.from_user.id, "companion_id": conv_id},
+        ) as response:
+            deleted_conversation = await response.text()
+
+    await bot.send_message(
+        message.from_user.id,
+        text=deleted_conversation,
+    )
+
+
+@dispatcher.message_handler(commands=["delete_history"])
+async def delete_history(message: types.Message):
+    conv_id = message.text.split(" ")[-1]
+    # deleted_conversation = CONVERSATIONS.delete_conversation(message.from_user.id, conv_id)
+    async with aiohttp.ClientSession() as session:
+        # Example for DELETE_COMPANION_ENDPOINT
+        async with session.post(
+                "http://localhost:8000/api/SpeechSynthesizer/delete_history",
                 json={"user_id": message.from_user.id, "companion_id": conv_id},
         ) as response:
             deleted_conversation = await response.text()

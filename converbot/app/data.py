@@ -40,6 +40,11 @@ class DeleteCompanion(BaseModel):
     companion_id: str
 
 
+class DeleteHistoryCompanion(BaseModel):
+    user_id: int
+    companion_id: str
+
+
 class DeleteAllCompanions(BaseModel):
     user_id: int
 

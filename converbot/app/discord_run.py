@@ -211,6 +211,7 @@ async def selfie(message: Message):
     async with aiohttp.ClientSession() as session:
         async with session.post(
                 "http://localhost:8000/api/SpeechSynthesizer/selfie",
+                headers={"Content-Type": "application/json"},
                 json={"user_id": message.author.id},
         ) as response:
             try:
@@ -221,6 +222,7 @@ async def selfie(message: Message):
             except Exception as e:
                 logging.exception(e)
                 await message.channel.send("Failed to send image to user. Please try again later.")
+
 
 @bot.command(name='start')
 async def start(ctx):

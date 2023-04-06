@@ -70,9 +70,11 @@ async def new_user(request: NewUser):
                         "programming robots\nProfession: software developer\nAppearance: handsome\nRelationship status: "
                         "single\nPersonality: kind\n"
                         ]
+    output_paths = []
     for description in bot_descriptions:
         time.sleep(1)
         path_to_json = Path(CONVERSATION_SAVE_DIR / str(request.user_id)/f"{user_id}-{int(time.time())}").with_suffix(".json")
+        output_paths.append(f"{user_id}-{int(time.time())}")
         with path_to_json.open(mode="w") as f:
             json.dump({"config": {
                 "model": "text-davinci-003",
@@ -121,7 +123,7 @@ async def new_user(request: NewUser):
                 "memory_moving_summary_buffer": "",
                 "bot_description": description
             }, f, indent=4)
-    return None
+    return output_paths
 
 
 @app.post(DELETE_CHAT_HISTORY_ENDPOINT)

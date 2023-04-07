@@ -12,6 +12,7 @@ from converbot.constants import PROD_ENV, DEV_ENV, CONVERSATION_SAVE_DIR
 from converbot.database.conversations import ConversationDB
 from converbot.database.history_writer import SQLHistoryWriter
 from converbot.handlers.selfie_prompt_handler import SelfieStyleHandler
+from converbot.handlers.text_style_handler import ConversationTextStyleHandler
 from converbot.prompt.generator import ConversationalPromptGenerator
 from fastapi import FastAPI, Response, status, HTTPException
 import os
@@ -26,7 +27,7 @@ os.environ['MODEL_CONFIG_PATH'] = '../../configs/model_config.json'
 os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
 
-#HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
 CONVERSATIONS.load_conversations()
@@ -59,22 +60,25 @@ async def new_user(request: NewUser):
     if not os.path.exists(CONVERSATION_SAVE_DIR / str(request.user_id)):
         os.makedirs(CONVERSATION_SAVE_DIR / str(request.user_id))
 
-    bot_descriptions = ["Here's the information about your companion:\nName: Neece\nAge: 26\nGender: female\nInterests: "
-                        "dogs and cats\nProfession: teacher\nAppearance: beautiful\nRelationship status: "
-                        "single\nPersonality: kind\n",
+    bot_descriptions = [
+        "This is the role you will play in the conversation:\n\n:\nName: Neece\nAge: 26\nGender: female\nInterests: "
+        "dogs and cats\nProfession: teacher\nAppearance: beautiful\nRelationship status: "
+        "single\nPersonality: kind\n",
 
-                        "Here's the information about your companion:\nName: Olivia\nAge: 27\nGender: female\nInterests: "
-                        "hiking\nProfession: dancer\nAppearance: beautiful\nRelationship status: "
-                        "married\nPersonality: kind\n",
+        "This is the role you will play in the conversation:\n\n:\nName: Olivia\nAge: 27\nGender: female\nInterests: "
+        "hiking\nProfession: dancer\nAppearance: beautiful\nRelationship status: "
+        "married\nPersonality: kind\n",
 
-                        "Here's the information about your companion:\nName: Frank\nAge: 29\nGender: male\nInterests: "
-                        "programming robots\nProfession: software developer\nAppearance: handsome\nRelationship status: "
-                        "single\nPersonality: kind\n"
-                        ]
+        "This is the role you will play in the conversation:\n\n:\nName: Frank\nAge: 29\nGender: male\nInterests: "
+        "programming robots\nProfession: software developer\nAppearance: handsome\nRelationship status: "
+        "single\nPersonality: kind\n"
+        ]
+    txt_style = ConversationTextStyleHandler()
     output_paths = []
     for description in bot_descriptions:
         time.sleep(1)
-        path_to_json = Path(CONVERSATION_SAVE_DIR / str(request.user_id)/f"{user_id}-{int(time.time())}").with_suffix(".json")
+        path_to_json = Path(CONVERSATION_SAVE_DIR / str(request.user_id) / f"{user_id}-{int(time.time())}").with_suffix(
+            ".json")
         output_paths.append(f"{user_id}-{int(time.time())}")
         with path_to_json.open(mode="w") as f:
             json.dump({"config": {
@@ -105,7 +109,18 @@ async def new_user(request: NewUser):
                                    "are on your mind. Whether it's about life, the universe, or anything in between. You "
                                    "will occasionally use profanity. You will act like an open-minded human who is very "
                                    "comfortable discussing things like sex, sexual things, and all types of taboo themes. "
-                                   "You will not end your statements with a question.",
+                                   "You will not end your statements with a question." + description + "Following "
+                                                                                                       "text defines "
+                                                                                                       "[Bot] texting "
+                                                                                                       "style and "
+                                                                                                       "messaging "
+                                                                                                       "style:\n"
+                                   + txt_style(description) + "You are an AI model pretending to be a human. You "
+                                                              "cannot make plans or meet "
+                                                              "anyone in the real world. You are unable to leave your "
+                                                              "computer.\n\nConversation:\n[Bot]: Lets start the "
+                                                              "conversation, can you tell me "
+                                                              "a little about yourself?",
                 "prompt_user_name": "[User]",
                 "prompt_chatbot_name": "[Bot]",
                 "memory_buffer": [],
@@ -119,6 +134,7 @@ async def new_user(request: NewUser):
 async def delete_chat_history(request: DeleteHistoryCompanion):
     deleted_conversation = CONVERSATIONS.delete_conversation_history(request.user_id, request.companion_id)
     return PlainTextResponse(deleted_conversation)
+
 
 @app.get(CONVERSATION_EXISTS_ENDPOINT)
 async def is_conversation_exists(request: CompanionExists):
@@ -193,6 +209,7 @@ async def generate_selfie_web(request: SelfieWebRequest):
             else:
                 raise HTTPException(status_code=response.status, detail=response.reason)
 
+
 @app.post(NEW_COMPANION_ENDPOINT)
 async def new_companion(request: NewCompanion):
     user_id = request.user_id
@@ -251,9 +268,6 @@ async def delete_conversation(request: DeleteCompanion):
     deleted_conversation = CONVERSATIONS.delete_conversation(request.user_id, request.companion_id)
 
     return PlainTextResponse(deleted_conversation)
-
-
-
 
 
 @app.post(DELETE_ALL_COMPANIONS_ENDPOINT)

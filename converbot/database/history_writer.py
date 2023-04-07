@@ -172,8 +172,6 @@ class SQLHistoryWriter:
                     "env": row[4],
                     "timestamp": row[5].strftime("%Y-%m-%d %H:%M:%S")
                 })
-            cursor.close()
-            self._connection.close()
             return messages
 
 

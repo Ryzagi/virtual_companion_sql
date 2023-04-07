@@ -7,7 +7,7 @@ from starlette.responses import PlainTextResponse
 
 from converbot.app.bot_utils import create_conversation
 from converbot.app.data import CompanionList, SwitchCompanion, DeleteCompanion, DeleteAllCompanions, Debug, Message, \
-    NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion
+    NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion, SelfieWebRequest
 from converbot.constants import PROD_ENV, DEV_ENV, CONVERSATION_SAVE_DIR
 from converbot.database.conversations import ConversationDB
 from converbot.database.history_writer import SQLHistoryWriter
@@ -26,7 +26,7 @@ os.environ['MODEL_CONFIG_PATH'] = '../../configs/model_config.json'
 os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
 
-HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+#HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
 CONVERSATIONS.load_conversations()
@@ -47,6 +47,7 @@ SLEEP_ENDPOINT = "/api/SpeechSynthesizer/sleep"
 SELFIE_ENDPOINT = "/api/SpeechSynthesizer/selfie"
 CONVERSATION_EXISTS_ENDPOINT = "/api/SpeechSynthesizer/is_conversation_exists"
 DELETE_CHAT_HISTORY_ENDPOINT = "/api/SpeechSynthesizer/delete_history"
+SELFIE_ENDPOINT_WEB = "/api/SpeechSynthesizer/selfie_web"
 SELFIE_HANDLER = SelfieStyleHandler()
 
 
@@ -160,6 +161,37 @@ async def generate_selfie(request: SelfieRequest):
             else:
                 raise HTTPException(status_code=response.status, detail=response.reason)
 
+
+@app.post(SELFIE_ENDPOINT_WEB)
+async def generate_selfie_web(request: SelfieWebRequest):
+    endpoint_url = "https://api2.makeai.run/v1/api/infer/txt2img"
+    headers = {"token": "5473e92142294dc88e0d39d6a7e40843"}
+    path_to_json = CONVERSATION_SAVE_DIR / str(request.user_id) / request.companion_id
+    bot_description = read_json_file(path_to_json.with_suffix('.json'))["bot_description"]
+    prompt = SELFIE_HANDLER(bot_description)
+    print(prompt)
+    data = {
+        "prompt": prompt,
+        "negative_prompt": "worst quality, lowres",
+        "model": "realisticVisionV20_v20.safetensors",
+        "vae": "vae-ft-mse-840000-ema-pruned.ckpt",
+        "loras": [{"name": "", "strength": 0.0}],
+        "embeddings": [{"name": "", "type": "positive", "strength": 0.0}],
+        "steps": 25,
+        "width": 512,
+        "height": 512,
+        "cfg": 11,
+        "seed": -1,
+        "scheduler": "Euler a",
+        "mode": "json"
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(endpoint_url, headers=headers, json=data) as response:
+            if response.status == 200:
+                content = await response.json()
+                return {"image": content["content"]["image"]}
+            else:
+                raise HTTPException(status_code=response.status, detail=response.reason)
 
 @app.post(NEW_COMPANION_ENDPOINT)
 async def new_companion(request: NewCompanion):

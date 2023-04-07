@@ -14,6 +14,11 @@ class SelfieRequest(BaseModel):
     user_id: int
 
 
+class SelfieWebRequest(BaseModel):
+    user_id: int
+    companion_id: str
+
+
 class NewUser(BaseModel):
     user_id: int
 

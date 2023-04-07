@@ -7,7 +7,8 @@ from starlette.responses import PlainTextResponse
 
 from converbot.app.bot_utils import create_conversation
 from converbot.app.data import CompanionList, SwitchCompanion, DeleteCompanion, DeleteAllCompanions, Debug, Message, \
-    NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion, SelfieWebRequest
+    NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion, SelfieWebRequest, \
+    SQLHistory
 from converbot.constants import PROD_ENV, DEV_ENV, CONVERSATION_SAVE_DIR
 from converbot.database.conversations import ConversationDB
 from converbot.database.history_writer import SQLHistoryWriter
@@ -49,6 +50,7 @@ SELFIE_ENDPOINT = "/api/SpeechSynthesizer/selfie"
 CONVERSATION_EXISTS_ENDPOINT = "/api/SpeechSynthesizer/is_conversation_exists"
 DELETE_CHAT_HISTORY_ENDPOINT = "/api/SpeechSynthesizer/delete_history"
 SELFIE_ENDPOINT_WEB = "/api/SpeechSynthesizer/selfie_web"
+SQL_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/sql_history_web"
 SELFIE_HANDLER = SelfieStyleHandler()
 
 
@@ -241,6 +243,15 @@ async def new_companion(request: NewCompanion):
     CONVERSATIONS.add_conversation(user_id, conversation, context)
     CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
     return PlainTextResponse(context)
+
+
+@app.post(SQL_CHAT_HISTORY_ENDPOINT_WEB)
+async def get_messages(request: SQLHistory):
+    try:
+        messages = HISTORY_WRITER.get_chat_history(conversation_id=request.companion_id, user_id=request.user_id)
+        return messages
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post(COMPANION_LIST_ENDPOINT)

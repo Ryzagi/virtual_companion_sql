@@ -23,6 +23,11 @@ class NewUser(BaseModel):
     user_id: int
 
 
+class SQLHistory(BaseModel):
+    user_id: int
+    companion_id: str
+
+
 class NewCompanion(BaseModel):
     user_id: int
     name: str

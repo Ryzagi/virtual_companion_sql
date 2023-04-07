@@ -1,7 +1,7 @@
 import datetime
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Tuple
 
 import psycopg2
 
@@ -129,6 +129,53 @@ class SQLHistoryWriter:
             )
             rows = cursor.fetchall()
         return rows
+
+    def get_chat_history(
+            self,
+            conversation_id: str,
+            user_id: int
+    ) -> List[dict]:
+        """
+        Retrieve the chat history for a given conversation_id and user_id.
+
+        Args:
+            conversation_id: Unique ID for the conversation.
+            user_id: ID of the user.
+
+        Returns:
+            A list of tuples, where each tuple represents a message in the conversation.
+            The tuple contains the following fields:
+            - user_id: ID of the user who sent the message.
+            - message: The text of the message.
+            - is_user: True if the message was sent by the user, False if sent by the chatbot.
+            - timestamp: The timestamp of the message.
+        """
+
+        messages = []
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT conversation_id, user_id, user_message, chatbot_message, env, timestamp
+                FROM ConversationHistory
+                WHERE conversation_id = %s AND user_id = %s
+                ORDER BY timestamp ASC
+                """,
+                (conversation_id, user_id)
+            )
+            rows = cursor.fetchall()
+            for row in rows:
+                messages.append({
+                    "conversation_id": row[0],
+                    "user_id": row[1],
+                    "user_message": row[2],
+                    "chatbot_message": row[3],
+                    "env": row[4],
+                    "timestamp": row[5].strftime("%Y-%m-%d %H:%M:%S")
+                })
+            cursor.close()
+            self._connection.close()
+            return messages
+
 
 
 if __name__ == "__main__":

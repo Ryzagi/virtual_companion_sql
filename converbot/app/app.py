@@ -51,6 +51,7 @@ CONVERSATION_EXISTS_ENDPOINT = "/api/SpeechSynthesizer/is_conversation_exists"
 DELETE_CHAT_HISTORY_ENDPOINT = "/api/SpeechSynthesizer/delete_history"
 SELFIE_ENDPOINT_WEB = "/api/SpeechSynthesizer/selfie_web"
 SQL_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/sql_history_web"
+SQL_GET_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/get_sql_history_web"
 SELFIE_HANDLER = SelfieStyleHandler()
 
 
@@ -246,9 +247,18 @@ async def new_companion(request: NewCompanion):
 
 
 @app.post(SQL_CHAT_HISTORY_ENDPOINT_WEB)
-async def get_messages(request: SQLHistory):
+async def get_sql_messages(request: SQLHistory):
     try:
         messages = HISTORY_WRITER.get_chat_history(conversation_id=request.companion_id, user_id=request.user_id)
+        return messages
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post(SQL_GET_CHAT_HISTORY_ENDPOINT_WEB)
+async def get_all_sql_messages():
+    try:
+        messages = HISTORY_WRITER.get_all_messages()
         return messages
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

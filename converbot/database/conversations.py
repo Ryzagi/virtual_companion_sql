@@ -105,7 +105,7 @@ class ConversationDB:
     def get_companion_descriptions_list(
             self,
             user_id: int
-    ) -> Union[List[Tuple[str, str]], None]:
+    ) -> Union[List[Tuple[dict, str]], None]:
         """
         Display the list of companion descriptions by user_id.
 
@@ -116,7 +116,15 @@ class ConversationDB:
         bot_descriptions = []
         for file in checkpoints:
             data = json.loads(file.read_text())
-            bot_descriptions.append((data["bot_description"], file.stem))
+            bot_descriptions_dict = {}
+            for line in data["bot_description"].split("\n"):
+                if line:
+                    parts = line.split(": ")
+                    if len(parts) == 2:
+                        key = parts[0]
+                        value = parts[1].strip()
+                        bot_descriptions_dict[key] = value
+            bot_descriptions.append((bot_descriptions_dict, file.stem))
         if len(bot_descriptions) == 0:
             return None
         return bot_descriptions

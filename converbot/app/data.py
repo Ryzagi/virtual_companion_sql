@@ -6,7 +6,7 @@ class CompanionList(BaseModel):
 
 
 class CompanionListOut(BaseModel):
-    description: str
+    description: dict
     companion_id: str
 
 

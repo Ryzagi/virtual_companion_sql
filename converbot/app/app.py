@@ -189,11 +189,9 @@ async def generate_selfie_web(request: SelfieWebRequest):
     print(prompt)
     data = {
         "prompt": prompt,
-        "negative_prompt": "worst quality, lowres",
+        "negative_prompt": "worst quality, lowres, nude, nudity, breasts, nipples, hands, fingers",
         "model": "realisticVisionV20_v20.safetensors",
         "vae": "vae-ft-mse-840000-ema-pruned.ckpt",
-        "loras": [{"name": "", "strength": 0.0}],
-        "embeddings": [{"name": "", "type": "positive", "strength": 0.0}],
         "steps": 25,
         "width": 512,
         "height": 512,

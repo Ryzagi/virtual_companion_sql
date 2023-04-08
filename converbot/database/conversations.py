@@ -169,7 +169,7 @@ class ConversationDB:
             # Modify data dictionary
             data['memory_buffer'] = []
             data['memory_moving_summary_buffer'] = ""
-
+            self._user_to_conversation[str(user_id)].setup_memory([], "")
             # Write updated data back to file
             with open(file_path, 'w') as f:
                 json.dump(data, f, indent=4)

@@ -41,8 +41,8 @@ class GPT3ConversationCheckpoint:
             data["config"] = GPT3ConversationConfig(**data["config"])
             return cls(**data)
         except json.JSONDecodeError:
-            file_path.unlink()
-            return None
+            print(file_path)
+            #return None
 
     def to_json(self, save_path: Path) -> None:
         """

@@ -49,5 +49,5 @@ class GPT3ConversationCheckpoint:
         """
         self.config = self.config.__dict__  # noqa
         with open(save_path, "w", encoding="utf-8") as f:
-            json.dump(self.__dict__, f, indent=4)
+            json.dump(self.__dict__, f, indent=4, ensure_ascii=False)
         self.config = GPT3ConversationConfig(**self.config)  # noqa

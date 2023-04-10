@@ -37,9 +37,12 @@ class GPT3ConversationCheckpoint:
             file_path: Path to JSON file.
         """
         print(file_path.read_text())
-        data = json.loads(file_path.read_text())
-        data["config"] = GPT3ConversationConfig(**data["config"])
-        return cls(**data)
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.loads(f.read_text())
+            print(data)
+            #data = json.loads(file_path.read_text())
+            data["config"] = GPT3ConversationConfig(**data["config"])
+            return cls(**data)
 
     def to_json(self, save_path: Path) -> None:
         """

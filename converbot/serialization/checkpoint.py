@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from converbot.config.gptconversation import GPT3ConversationConfig
-
+from io import open
 
 @dataclass
 class GPT3ConversationCheckpoint:

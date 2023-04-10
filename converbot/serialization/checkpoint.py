@@ -38,7 +38,7 @@ class GPT3ConversationCheckpoint:
         """
         print(file_path.read_text())
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.loads(f.read_text())
+            data = json.loads(f).read_text()
             print(data)
             #data = json.loads(file_path.read_text())
             data["config"] = GPT3ConversationConfig(**data["config"])

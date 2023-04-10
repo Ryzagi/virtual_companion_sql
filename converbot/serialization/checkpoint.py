@@ -48,6 +48,6 @@ class GPT3ConversationCheckpoint:
             save_path: The path to save the configuration.
         """
         self.config = self.config.__dict__  # noqa
-        with open(save_path, "w") as f:
+        with open(save_path, "w", encoding="utf-8") as f:
             json.dump(self.__dict__, f, indent=4)
         self.config = GPT3ConversationConfig(**self.config)  # noqa

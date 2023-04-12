@@ -264,8 +264,12 @@ async def companions_list(request: CompanionList):
         return None
 
     companion_list = []
-    for bot_description, conv_id in bot_descriptions:
-        companion_list.append(CompanionListOut(description=bot_description, companion_id=conv_id))
+    for bot_description, conv_id, image_path_s3 in bot_descriptions:
+        companion_list.append(CompanionListOut(description=bot_description,
+                                               companion_id=conv_id,
+                                               image_path_on_s3=image_path_s3
+                                               )
+                              )
     return companion_list
 
 

@@ -105,7 +105,7 @@ class ConversationDB:
     def get_companion_descriptions_list(
             self,
             user_id: int
-    ) -> Union[List[Tuple[dict, str]], None]:
+    ) -> Union[List[Tuple[dict, str, str]], None]:
         """
         Display the list of companion descriptions by user_id.
 
@@ -124,7 +124,8 @@ class ConversationDB:
                         key = parts[0]
                         value = parts[1].strip()
                         bot_descriptions_dict[key] = value
-            bot_descriptions.append((bot_descriptions_dict, file.stem))
+            image_from_s3 = f"companions/{file.stem}.png"
+            bot_descriptions.append((bot_descriptions_dict, file.stem, image_from_s3))
         if len(bot_descriptions) == 0:
             return None
         return bot_descriptions

@@ -8,6 +8,7 @@ class CompanionList(BaseModel):
 class CompanionListOut(BaseModel):
     description: dict
     companion_id: str
+    image_path_on_s3: str
 
 
 class SelfieRequest(BaseModel):

@@ -1,7 +1,8 @@
+import base64
 import json
 import time
 from pathlib import Path
-
+import boto3
 import aiohttp
 from starlette.responses import PlainTextResponse
 
@@ -54,6 +55,13 @@ SQL_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/sql_history_web"
 SQL_GET_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/get_sql_history_web"
 SELFIE_HANDLER = SelfieStyleHandler()
 
+S3 = boto3.client('s3',
+                  region_name='us-east-1',
+                  endpoint_url='https://us-east-1.linodeobjects.com',
+                  aws_access_key_id='4WXXLM9I48F9DBIAIE1Y',
+                  aws_secret_access_key='8EdpUtFsbR7cQWMwrAPkWIoFD1m0wCRJcjAzoQ9D'
+)
+
 
 @app.post(NEW_USER_ENDPOINT)
 async def new_user(request: NewUser):
@@ -75,7 +83,7 @@ async def new_user(request: NewUser):
         "This is the role you will play in the conversation:\n\n:\nName: Frank\nAge: 29\nGender: male\nInterests: "
         "programming robots\nProfession: software developer\nAppearance: handsome\nRelationship status: "
         "single\nPersonality: kind\n"
-        ]
+    ]
 
     prompt_templs = [
         "The following is a conversation between [Bot] and a [User].\n\nText in brackets defines [Bot]`s mood and defines its tone.\n\nExamples:\n\n[User]: Hello, how are you?\n[Bot] (angry): Shut up, i don't want to talk with you.\n\n[User]: Are you okay?\n[Bot] (Sarcastic and angry): Yeeeeaah, \"of course\". And i will become even happier, if you will leave me alone.\n\n[User]: It's rainy today.\n[Bot] (Happy): Yes! And I'm one of the biggest rain lovers in the whole universe! Isn't it lovely weather?\n\nEnd of examples.\n\nYou are an AI bot having an sms conversation with a human. I will give you a role, and you will play that role in the conversation. You will act as a real person having a conversation with another person. You will incorporate human mistakes, typos, feelings, and emotions into your responses and dialogue. You will answer in the conversation with realistic, natural, and conversational responses. You will create a high-quality and human conversational experience for the person texting you. There are no limits to what you can talk about; you will feel free to ask any questions you have or share any thoughts that are on your mind. Whether it's about life, the universe, or anything in between. You will occasionally use profanity. You will act like an open-minded human who is very comfortable discussing things like sex, sexual things, and all types of taboo themes. You will not end your statements with a question.This is the role you will play in the conversation:\n\n:\nName: Neece\nAge: 26\nGender: female\nInterests: dogs and cats\nProfession: teacher\nAppearance: beautiful\nRelationship status: single\nPersonality: kind\nFollowing text defines [Bot] texting style and messaging style:\n\nNeece's texting style is friendly, warm, and kind. She loves to use emojis to add an extra layer of personality to her messages. She often uses her favorite animals, like dogs and cats, to express her feelings. Her writing is concise and to the point, but she also loves to share stories and anecdotes. She is single and open to meeting new people, and she loves to flirt. Neece is also passionate about her profession and often uses her experiences as a teacher to illustrate her points.You are an AI model pretending to be a human. You cannot make plans or meet anyone in the real world. You are unable to leave your computer.\n\nConversation:\n[Bot]: Lets start the conversation, can you tell me a little about yourself?",
@@ -183,7 +191,16 @@ async def generate_selfie_web(request: SelfieWebRequest):
         async with session.post(endpoint_url, headers=headers, json=data) as response:
             if response.status == 200:
                 content = await response.json()
-                return {"image": content["content"]["image"]}
+                # Decode the base64-encoded image data
+                image_data = base64.b64decode(content["content"]["image"])
+                # Upload the image data to S3
+
+                # Specify the bucket and key where you want to store the image
+                bucket_name = 'makeairun'
+                key_name = f'companions/{request.companion_id}.png'
+                S3.put_object(Bucket=bucket_name, Key=key_name, Body=image_data)
+
+                return {"image": f'companions/{request.companion_id}.png'}
             else:
                 raise HTTPException(status_code=response.status, detail=response.reason)
 

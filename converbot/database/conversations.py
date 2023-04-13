@@ -128,7 +128,18 @@ class ConversationDB:
             bot_descriptions.append((bot_descriptions_dict, file.stem, image_from_s3))
         if len(bot_descriptions) == 0:
             return None
-        return bot_descriptions
+
+        new_paths = ["companions/9999999999999999999999999999999999999999999-1681323547.png",
+                     "companions/9999999999999999999999999999999999999999999-1681323548.png",
+                     "companions/9999999999999999999999999999999999999999999-1681323549.png"]
+
+        updated_bot_descriptions = []
+        for i, (description, companion_id, image_path) in enumerate(bot_descriptions):
+            if i < 3:
+                updated_bot_descriptions.append((description, companion_id, new_paths[i]))
+            else:
+                updated_bot_descriptions.append((description, companion_id, image_path))
+        return updated_bot_descriptions
 
     def get_checkpoint_path_by_conversation_id(
             self,

@@ -85,6 +85,9 @@ class ConversationDB:
 
             conversation.save(conversation_save_path, bot_description=chatbot_description)
 
+    def get_conversation_id_by_user_id(self, user_id: int) -> str:
+            return self._user_to_conversation_id[str(user_id)]
+
     @staticmethod
     def get_latest_conversation_checkpoint_path(
             checkpoints_path: Path,
@@ -101,6 +104,8 @@ class ConversationDB:
         )[0]
 
         return latest_checkpoint, latest_checkpoint.stem
+
+
 
     def get_companion_descriptions_list(
             self,

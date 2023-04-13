@@ -46,6 +46,7 @@ MESSAGE_ENDPOINT = "/api/SpeechSynthesizer/message"
 DEBUG_ENDPOINT = "/api/SpeechSynthesizer/debug"
 NEW_USER_ENDPOINT = "/api/SpeechSynthesizer/new_user"
 NEW_COMPANION_ENDPOINT = "/api/SpeechSynthesizer/new_companion"
+NEW_COMPANION_ENDPOINT_WEB = "/api/SpeechSynthesizer/new_companion_web"
 SLEEP_ENDPOINT = "/api/SpeechSynthesizer/sleep"
 SELFIE_ENDPOINT = "/api/SpeechSynthesizer/selfie"
 CONVERSATION_EXISTS_ENDPOINT = "/api/SpeechSynthesizer/is_conversation_exists"
@@ -95,10 +96,9 @@ async def new_user(request: NewUser):
     output_paths = []
     for description, template in zip(bot_descriptions, prompt_templs):
         time.sleep(1)
-        path_to_json = Path(CONVERSATION_SAVE_DIR / str(request.user_id) / f"{user_id}-{int(time.time())}").with_suffix(
-            ".json")
+        path_to_json = Path(CONVERSATION_SAVE_DIR / str(request.user_id) / f"{user_id}-{int(time.time())}")
         output_paths.append(f"{user_id}-{int(time.time())}")
-        with path_to_json.open(mode="w") as f:
+        with path_to_json.with_suffix(".json").open(mode="w") as f:
             json.dump({"config": {
                 "model": "text-davinci-003",
                 "max_tokens": 256,
@@ -236,6 +236,41 @@ async def new_companion(request: NewCompanion):
     CONVERSATIONS.add_conversation(user_id, conversation, context)
     CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
     return PlainTextResponse(context)
+
+@app.post(NEW_COMPANION_ENDPOINT_WEB)
+async def new_companion(request: NewCompanion):
+    user_id = request.user_id
+    name = request.name
+    age = request.age
+    gender = request.gender
+    interest = request.interest
+    profession = request.profession
+    appearance = request.appearance
+    relationship = request.relationship
+    mood = request.mood
+
+    context = (
+        f"Name: {name}\n"
+        f"Age: {age}\n"
+        f"Gender: {gender}\n"
+        f"Interests: {interest}\n"
+        f"Profession: {profession}\n"
+        f"Appearance: {appearance}\n"
+        f"Relationship status: {relationship}\n"
+        f"Personality: {mood}\n"
+    )
+    intro = f"This is the role you will play in the conversation:\n\n"
+    conversation = create_conversation(
+        prompt=PROMPT_GENERATOR(intro + context),
+        tone=mood,
+        config_path=Path(os.environ.get('MODEL_CONFIG_PATH'))
+    )
+    CONVERSATIONS.add_conversation(user_id, conversation, context)
+    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    companion_id = CONVERSATIONS.get_conversation_id_by_user_id(request.user_id)
+    return {"context": context,
+            "companion_id": companion_id
+            }
 
 
 @app.post(SQL_CHAT_HISTORY_ENDPOINT_WEB)

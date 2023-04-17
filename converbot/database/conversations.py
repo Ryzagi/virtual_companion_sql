@@ -117,7 +117,7 @@ class ConversationDB:
         Args:
             user_id: Telegram user_ids of the user.
         """
-        checkpoints = list(self._conversation_save_dir.rglob(f"{user_id}-*.json"))
+        checkpoints = sorted(list(self._conversation_save_dir.rglob(f"{user_id}-*.json")))
         bot_descriptions = []
         for file in checkpoints:
             data = json.loads(file.read_text())

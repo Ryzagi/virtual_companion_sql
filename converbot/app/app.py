@@ -9,7 +9,7 @@ from starlette.responses import PlainTextResponse
 from converbot.app.bot_utils import create_conversation
 from converbot.app.data import CompanionList, SwitchCompanion, DeleteCompanion, DeleteAllCompanions, Debug, Message, \
     NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion, SelfieWebRequest, \
-    SQLHistory, Tone
+    SQLHistory, Tone, SQLHistoryCount
 from converbot.constants import PROD_ENV, DEV_ENV, CONVERSATION_SAVE_DIR
 from converbot.database.conversations import ConversationDB
 from converbot.database.history_writer import SQLHistoryWriter
@@ -55,6 +55,7 @@ SELFIE_ENDPOINT_WEB = "/api/SpeechSynthesizer/selfie_web"
 SQL_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/sql_history_web"
 SQL_GET_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/get_sql_history_web"
 TONE_ENDPOINT_WEB = "/api/SpeechSynthesizer/tone_web"
+SQL_COUNT_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/count_messages_sql_web"
 
 SELFIE_HANDLER = SelfieStyleHandler()
 
@@ -283,6 +284,13 @@ async def get_sql_messages(request: SQLHistory):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post(SQL_COUNT_CHAT_HISTORY_ENDPOINT_WEB)
+async def get_count_sql_messages_by_user_id(request: SQLHistoryCount):
+    try:
+        messages_count = HISTORY_WRITER.get_message_count_by_user_id(user_id=request.user_id)
+        return messages_count
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post(SQL_GET_CHAT_HISTORY_ENDPOINT_WEB)
 async def get_all_sql_messages():

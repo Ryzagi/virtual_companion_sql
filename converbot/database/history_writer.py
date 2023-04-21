@@ -174,7 +174,30 @@ class SQLHistoryWriter:
                 })
             return messages
 
+    def get_message_count_by_user_id(
+            self,
+            user_id: int
+    ) -> int:
+        """
+        Retrieve the count of messages sent by a given user_id across all conversations.
 
+        Args:
+            user_id: ID of the user.
+
+        Returns:
+            The count of messages sent by the given user_id across all conversations.
+        """
+
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM ConversationHistory
+                WHERE user_id = %s
+                """,
+                (user_id,)
+            )
+            return cursor.fetchone()[0]
 
 if __name__ == "__main__":
     db = SQLHistoryWriter(

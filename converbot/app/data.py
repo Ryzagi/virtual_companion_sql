@@ -31,6 +31,8 @@ class SQLHistory(BaseModel):
     user_id: int
     companion_id: str
 
+class SQLHistoryCount(BaseModel):
+    user_id: int
 
 class NewCompanion(BaseModel):
     user_id: int

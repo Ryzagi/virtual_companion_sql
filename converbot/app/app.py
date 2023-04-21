@@ -9,7 +9,7 @@ from starlette.responses import PlainTextResponse
 from converbot.app.bot_utils import create_conversation
 from converbot.app.data import CompanionList, SwitchCompanion, DeleteCompanion, DeleteAllCompanions, Debug, Message, \
     NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion, SelfieWebRequest, \
-    SQLHistory
+    SQLHistory, Tone
 from converbot.constants import PROD_ENV, DEV_ENV, CONVERSATION_SAVE_DIR
 from converbot.database.conversations import ConversationDB
 from converbot.database.history_writer import SQLHistoryWriter
@@ -54,6 +54,8 @@ DELETE_CHAT_HISTORY_ENDPOINT = "/api/SpeechSynthesizer/delete_history"
 SELFIE_ENDPOINT_WEB = "/api/SpeechSynthesizer/selfie_web"
 SQL_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/sql_history_web"
 SQL_GET_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/get_sql_history_web"
+TONE_ENDPOINT_WEB = "/api/SpeechSynthesizer/tone_web"
+
 SELFIE_HANDLER = SelfieStyleHandler()
 
 S3 = boto3.client('s3',
@@ -73,15 +75,15 @@ async def new_user(request: NewUser):
         os.makedirs(CONVERSATION_SAVE_DIR / str(request.user_id))
 
     bot_descriptions = [
-        "This is the role you will play in the conversation:\n\n:\nName: Neece\nAge: 26\nGender: female\nInterests: "
+        "Name: Neece\nAge: 26\nGender: female\nInterests: "
         "dogs and cats\nProfession: teacher\nAppearance: beautiful\nRelationship status: "
         "single\nPersonality: kind\n",
 
-        "This is the role you will play in the conversation:\n\n:\nName: Olivia\nAge: 27\nGender: female\nInterests: "
+        "Name: Olivia\nAge: 27\nGender: female\nInterests: "
         "hiking\nProfession: dancer\nAppearance: beautiful\nRelationship status: "
         "married\nPersonality: kind\n",
 
-        "This is the role you will play in the conversation:\n\n:\nName: Frank\nAge: 29\nGender: male\nInterests: "
+        "Name: Frank\nAge: 29\nGender: male\nInterests: "
         "programming robots\nProfession: software developer\nAppearance: handsome\nRelationship status: "
         "single\nPersonality: kind\n"
     ]
@@ -310,9 +312,10 @@ async def companions_list(request: CompanionList):
 
 @app.post(SWITCH_COMPANION_ENDPOINT)
 async def load_conversation(request: SwitchCompanion):
-    loaded_conversation = CONVERSATIONS.load_conversation(request.user_id, request.companion_id)
-
-    return PlainTextResponse(loaded_conversation)
+    loaded_conversation, bot_description = CONVERSATIONS.load_conversation(request.user_id, request.companion_id)
+    if bot_description is not None:
+        return bot_description
+    return None
 
 
 @app.post(DELETE_COMPANION_ENDPOINT)
@@ -344,6 +347,15 @@ async def debug(request: Debug):
 
     return PlainTextResponse(text)
 
+@app.post(TONE_ENDPOINT_WEB)
+async def handle_tone(request: Tone):
+    #if request.content.startswith("/tone"):
+    #    tone = request.content[6:]
+    tone = request.content
+    conversation = CONVERSATIONS.get_conversation(request.user_id)
+    tone_info = f"Information «{tone}» has been added."
+    conversation.set_tone(tone)
+    return PlainTextResponse(tone_info)
 
 @app.post(MESSAGE_ENDPOINT)
 async def handle_message(request: Message):

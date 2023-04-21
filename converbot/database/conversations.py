@@ -208,9 +208,18 @@ class ConversationDB:
                 str(user_id)
             ] = conversation_id
             self._conversation_id_to_bot_description[conversation_id] = bot_desc['bot_description']
-            return f"#{conversation_id} conversation ID has been loaded."
+
+            bot_descriptions_dict = {}
+            for line in bot_desc['bot_description'].split("\n"):
+                if line:
+                    parts = line.split(": ")
+                    if len(parts) == 2:
+                        key = parts[0]
+                        value = parts[1].strip()
+                        bot_descriptions_dict[key] = value
+            return f"#{conversation_id} conversation ID has been loaded.", bot_descriptions_dict
         else:
-            return f"#{conversation_id} conversation ID does not exist."
+            return f"#{conversation_id} conversation ID does not exist.", None
 
     def delete_all_conversations_by_user_id(
             self,

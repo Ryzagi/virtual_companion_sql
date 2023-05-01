@@ -202,6 +202,7 @@ class ConversationDB:
         file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
         if file_path.exists():
             bot_desc = json.loads(file_path.read_text())
+            tone = bot_desc['config']['tone']
             conversation = GPT3Conversation.from_checkpoint(file_path)
             self._user_to_conversation[str(user_id)] = conversation
             self._user_to_conversation_id[
@@ -217,6 +218,7 @@ class ConversationDB:
                         key = parts[0]
                         value = parts[1].strip()
                         bot_descriptions_dict[key] = value
+            bot_descriptions_dict['tone'] = tone
             return f"#{conversation_id} conversation ID has been loaded.", bot_descriptions_dict
         else:
             return f"#{conversation_id} conversation ID does not exist.", None

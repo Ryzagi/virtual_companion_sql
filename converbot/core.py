@@ -187,6 +187,7 @@ class GPT3Conversation:
             buffer=checkpoint.memory_buffer,
             moving_summary_buffer=checkpoint.memory_moving_summary_buffer,
         )
+        conversation.set_tone(checkpoint.config.tone)
         return conversation
 
 

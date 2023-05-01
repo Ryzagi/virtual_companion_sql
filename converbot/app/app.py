@@ -28,10 +28,10 @@ os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
 os.environ['MODEL_CONFIG_PATH'] = '../../configs/model_config.json'
 os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
-import logging
+#import logging
 
-logging.basicConfig(level=logging.DEBUG)
-#HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+#logging.basicConfig(level=logging.DEBUG)
+HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
 CONVERSATIONS.load_conversations()
@@ -68,10 +68,10 @@ S3 = boto3.client('s3',
                   aws_secret_access_key='8EdpUtFsbR7cQWMwrAPkWIoFD1m0wCRJcjAzoQ9D'
 )
 
-@app.get("/")
-async def read_root():
-    logging.debug("Debug log message")
-    return {"Hello": "World"}
+#@app.get("/")
+#async def read_root():
+#    logging.debug("Debug log message")
+#    return {"Hello": "World"}
 
 @app.post(NEW_USER_ENDPOINT)
 async def new_user(request: NewUser):

@@ -29,7 +29,7 @@ os.environ['MODEL_CONFIG_PATH'] = '../../configs/model_config.json'
 os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
 
-HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+#HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
 CONVERSATIONS.load_conversations()

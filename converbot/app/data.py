@@ -10,9 +10,17 @@ class CompanionListOut(BaseModel):
     companion_id: str
     image_path_on_s3: str
 
+
 class Tone(BaseModel):
     user_id: int
     content: str
+
+
+class ToneWeb(BaseModel):
+    user_id: int
+    content: str
+    companion_id: str
+
 
 class SelfieRequest(BaseModel):
     user_id: int
@@ -31,8 +39,10 @@ class SQLHistory(BaseModel):
     user_id: int
     companion_id: str
 
+
 class SQLHistoryCount(BaseModel):
     user_id: int
+
 
 class NewCompanion(BaseModel):
     user_id: int

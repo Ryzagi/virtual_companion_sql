@@ -9,7 +9,7 @@ from starlette.responses import PlainTextResponse
 from converbot.app.bot_utils import create_conversation
 from converbot.app.data import CompanionList, SwitchCompanion, DeleteCompanion, DeleteAllCompanions, Debug, Message, \
     NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion, SelfieWebRequest, \
-    SQLHistory, Tone, SQLHistoryCount
+    SQLHistory, Tone, SQLHistoryCount, ToneWeb
 from converbot.constants import PROD_ENV, DEV_ENV, CONVERSATION_SAVE_DIR
 from converbot.database.conversations import ConversationDB
 from converbot.database.history_writer import SQLHistoryWriter
@@ -28,9 +28,7 @@ os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
 os.environ['MODEL_CONFIG_PATH'] = '../../configs/model_config.json'
 os.environ['PROMPT_CONFIG_PATH'] = '../../configs/prompt_config.json'
 os.environ['ENVIRONMENT'] = 'dev'
-#import logging
 
-#logging.basicConfig(level=logging.DEBUG)
 HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
@@ -58,7 +56,7 @@ SQL_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/sql_history_web"
 SQL_GET_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/get_sql_history_web"
 TONE_ENDPOINT_WEB = "/api/SpeechSynthesizer/tone_web"
 SQL_COUNT_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/count_messages_sql_web"
-
+TONE_COMP_ID_ENDPOINT_WEB = "/api/SpeechSynthesizer/tone_companion_web"
 SELFIE_HANDLER = SelfieStyleHandler()
 
 S3 = boto3.client('s3',
@@ -369,6 +367,16 @@ async def handle_tone(request: Tone):
     conversation = CONVERSATIONS.get_conversation(request.user_id)
     tone_info = f"Information «{tone}» has been added."
     conversation.set_tone(tone)
+    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    return PlainTextResponse(tone_info)
+
+@app.post(TONE_COMP_ID_ENDPOINT_WEB)
+async def handle_tone(request: ToneWeb):
+    tone = request.content
+    conversation = CONVERSATIONS.tone_for_conversation(request.user_id, request.companion_id)
+    tone_info = f"Information «{tone}» has been added."
+    conversation.set_tone(tone)
+    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
     return PlainTextResponse(tone_info)
 
 @app.post(MESSAGE_ENDPOINT)

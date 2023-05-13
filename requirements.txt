@@ -1,4 +1,4 @@
-langchain
+langchain==0.0.74
 openai
 tiktoken
 aiogram
@@ -7,3 +7,4 @@ psycopg2-binary
 fastapi
 uvicorn
 discord
+boto3

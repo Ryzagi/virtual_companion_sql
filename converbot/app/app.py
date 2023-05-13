@@ -56,6 +56,7 @@ SQL_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/sql_history_web"
 SQL_GET_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/get_sql_history_web"
 TONE_ENDPOINT_WEB = "/api/SpeechSynthesizer/tone_web"
 SQL_COUNT_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/count_messages_sql_web"
+SQL_COUNT_COMPANION_CHAT_HISTORY_ENDPOINT_WEB = "/api/SpeechSynthesizer/count_companion_messages_sql_web"
 TONE_COMP_ID_ENDPOINT_WEB = "/api/SpeechSynthesizer/tone_companion_web"
 SELFIE_HANDLER = SelfieStyleHandler()
 
@@ -292,6 +293,15 @@ async def get_sql_messages(request: SQLHistory):
 async def get_count_sql_messages_by_user_id(request: SQLHistoryCount):
     try:
         messages_count = HISTORY_WRITER.get_message_count_by_user_id(user_id=request.user_id)
+        return messages_count
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post(SQL_COUNT_COMPANION_CHAT_HISTORY_ENDPOINT_WEB)
+async def get_count_sql_messages_by_user_id_and_companion_id(request: SQLHistory):
+    try:
+        messages_count = HISTORY_WRITER.get_message_count_by_user_and_conversation_id(user_id=request.user_id, conversation_id=request.companion_id,)
         return messages_count
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

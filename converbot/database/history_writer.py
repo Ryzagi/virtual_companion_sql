@@ -199,6 +199,34 @@ class SQLHistoryWriter:
             )
             return cursor.fetchone()[0]
 
+    def get_message_count_by_user_and_conversation_id(
+            self,
+            user_id: int,
+            conversation_id: str
+    ) -> int:
+        """
+        Retrieve the count of messages sent between two users across all conversations.
+
+        Args:
+            user_id: ID of the first user.
+            companion_id: ID of the second user.
+
+        Returns:
+            The count of messages sent between the two users across all conversations.
+        """
+
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM ConversationHistory
+                WHERE user_id = %s AND conversation_id = %s                
+                """,
+                (user_id, conversation_id)
+            )
+            return cursor.fetchone()[0]
+
+
 if __name__ == "__main__":
     db = SQLHistoryWriter(
         host="localhost",

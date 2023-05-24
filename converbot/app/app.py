@@ -305,7 +305,7 @@ async def generate_selfie_web(request: SelfieWebRequest):
                 key_name = f'companions/{request.companion_id}.jpg'
                 S3.put_object(Bucket=bucket_name, Key=key_name, Body=image_data, ACL='public-read')
 
-                return {"image": f'companions/{request.companion_id}.png'}
+                return {"image": f'companions/{request.companion_id}.jpg'}
             else:
                 raise HTTPException(status_code=response.status, detail=response.reason)
 

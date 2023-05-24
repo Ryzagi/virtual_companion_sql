@@ -502,6 +502,8 @@ async def handle_message(request: Message):
         return Response(status_code=status.HTTP_406_NOT_ACCEPTABLE)
     chatbot_response = conversation.ask(request.content)
     print(chatbot_response)
+    chatbot_response = chatbot_response.replace('\n', '').replace('\r', '')
+    print(chatbot_response)
     HISTORY_WRITER.write_message(
         user_id=request.user_id,
         conversation_id=CONVERSATIONS.get_conversation_id(request.user_id),

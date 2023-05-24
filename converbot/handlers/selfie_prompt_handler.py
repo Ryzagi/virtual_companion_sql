@@ -8,7 +8,7 @@ class SelfieStyleHandler:
         prompt_template = """Following in the format of those examples, please create a very short prompt that I can 
         use to make a photo-realistic portrait of this person described below. Please describe their face and 
         surroundings. 
-        
+
         Example: 
 
         Context: 
@@ -21,7 +21,7 @@ class SelfieStyleHandler:
         Relationship status: single
         Personality: Mike is a total man's man. He loves hanging with his bros and downing beers.
 
-        Selfie style: Professional portrait photograph of a 23 year old athletic, bartending man with no facial 
+        Selfie style: Professional close-up portrait photograph of a 23 year old athletic, bartending man with no facial 
         hair, strong arms, drinking a beer, ((playful and mischievous expression)), standing outside in an open field 
         with off-roading vehicles, ultra-realistic, concept art, elegant, highly detailed, intricate, sharp focus, 
         depth of field, f/1. 8, 85mm, mid-shot, (centered image composition), (professionally color graded), 

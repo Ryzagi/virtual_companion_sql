@@ -41,7 +41,7 @@ class GPT3Conversation:
             frequency_penalty=model_config.frequency_penalty,
             presence_penalty=model_config.presence_penalty,
             best_of=model_config.best_of,
-            stop=["\nUser:"]
+            model_kwargs={"stop": ["\nUser:"]}
         )
 
         self._memory = ConversationSummaryBufferMemory(

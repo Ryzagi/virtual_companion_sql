@@ -52,8 +52,8 @@ class SQLHistoryWriter:
         data = json.loads(file_path.read_text())
         return cls(**data)
 
-    def __del__(self) -> None:
-        self._connection.close()
+    #def __del__(self) -> None:
+    #    self._connection.close()
 
     def _create_database(self) -> None:
         """

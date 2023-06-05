@@ -106,6 +106,15 @@ class SQLHistoryWriter:
             if timestamp
             else datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
+        if self._connection.closed:
+            self._connection = psycopg2.connect(
+                host=self._connection.host,
+                port=self._connection.port,
+                user=self._connection.user,
+                password=self._connection.password,
+                database=self._connection.database,
+                **self._connection.connect_kwargs
+            )
         with self._connection.cursor() as cursor:
             cursor.execute(
                 """

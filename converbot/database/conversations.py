@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 from typing import Dict, Tuple, List, Optional, Union
 
+from converbot.config.gptconversation import GPT3ConversationConfig
 from converbot.constants import CONVERSATION_SAVE_DIR
 from converbot.core import GPT3Conversation
 from converbot.serialization.checkpoint import GPT3ConversationCheckpoint
@@ -95,34 +96,59 @@ class ConversationDB:
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT checkpoint_id FROM Companions WHERE user_id = %(user_id)s
+                SELECT * FROM Companions WHERE user_id = %(user_id)s
                 """,
                 {'user_id': user_id}
             )
 
             # Fetch all the rows returned by the query
-            checkpoint_ids = cursor.fetchall()
+            raw_checkpoints = cursor.fetchall()
 
-        checkpoints = sorted(list(self._conversation_save_dir.rglob(f"{user_id}-*.json")))
+        checkpoints, conversation_ids = [], []
+
+        for checkpoint in raw_checkpoints:
+            checkpoints.append(
+                GPT3ConversationCheckpoint(
+                    config=GPT3ConversationConfig(model=checkpoint[3],
+                                                  max_tokens=checkpoint[4],
+                                                  temperature=checkpoint[5],
+                                                  top_p=checkpoint[6],
+                                                  frequency_penalty=checkpoint[7],
+                                                  presence_penalty=checkpoint[8],
+                                                  best_of=checkpoint[9],
+                                                  tone=checkpoint[10],
+                                                  ),
+                    prompt_template=checkpoint[12],
+                    prompt_user_name=checkpoint[13],
+                    prompt_chatbot_name=checkpoint[14],
+                    memory_buffer=json.loads(checkpoint[15]),
+                    memory_moving_summary_buffer=checkpoint[16],
+                    bot_description=checkpoint[17],
+                )
+            )
+            conversation_ids.append(checkpoint[2])
+
         bot_descriptions = []
-        for file in checkpoints:
-            data = json.loads(file.read_text())
+        for checkpoint, checkpoint_id in zip(checkpoints, conversation_ids):
             bot_descriptions_dict = {}
-            for line in data["bot_description"].split("\n"):
+            for line in checkpoint.bot_description.split("\n"):
                 if line:
                     parts = line.split(": ")
                     if len(parts) == 2:
                         key = parts[0]
                         value = parts[1].strip()
                         bot_descriptions_dict[key] = value
-            image_from_s3 = f"companions/{file.stem}.png"
-            bot_descriptions.append((bot_descriptions_dict, file.stem, image_from_s3))
+
+            image_from_s3 = f"companions/{checkpoint_id}.jpg"
+
+            bot_descriptions.append((bot_descriptions_dict, checkpoint_id, image_from_s3))
+
         if len(bot_descriptions) == 0:
             return None
 
-        new_paths = ["companions/9999999999999999999999999999999999999999999-1681323547.png",
-                     "companions/9999999999999999999999999999999999999999999-1681323548.png",
-                     "companions/9999999999999999999999999999999999999999999-1681323549.png"]
+        new_paths = ["companions/9999999999999999999999999999999999999999999-1681323547.jpg",
+                     "companions/9999999999999999999999999999999999999999999-1681323548.jpg",
+                     "companions/9999999999999999999999999999999999999999999-1681323549.jpg"]
 
         updated_bot_descriptions = []
         for i, (description, companion_id, image_path) in enumerate(bot_descriptions):

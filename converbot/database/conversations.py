@@ -5,6 +5,7 @@ from typing import Dict, Tuple, List, Optional, Union
 
 from converbot.constants import CONVERSATION_SAVE_DIR
 from converbot.core import GPT3Conversation
+from converbot.serialization.checkpoint import GPT3ConversationCheckpoint
 from converbot.utils.utils import read_json_file
 
 
@@ -48,7 +49,7 @@ class ConversationDB:
         self._conversation_id_to_bot_description[conversation_id] = bot_description
         return conversation_id
 
-    def serialize_user_conversation(self, user_id: int) -> None:
+    def serialize_user_conversation(self, user_id: int, connection) -> None:
         """
         Serialize the conversations to disk.
 
@@ -57,36 +58,10 @@ class ConversationDB:
         user_id = str(user_id)
         conversation_id = self._user_to_conversation_id[user_id]
         chatbot_description = self._conversation_id_to_bot_description[conversation_id]
-        conversation_save_path = self._conversation_save_dir / str(user_id)
-        conversation_save_path.mkdir(exist_ok=True)
-        conversation_save_path = (
-                conversation_save_path / self._user_to_conversation_id[user_id]
-        )
-        conversation_save_path = conversation_save_path.with_suffix(".json")
-        self._user_to_conversation[user_id].save(conversation_save_path, bot_description=chatbot_description)
-
-    def serialize_conversations(self) -> None:
-        """
-        Serialize the conversations to disk.
-
-        Returns: None
-        """
-        for user_id, conversation in self._user_to_conversation.items():
-            conversation_id = self._user_to_conversation_id[user_id]
-            chatbot_description = self._conversation_id_to_bot_description[conversation_id]
-
-            conversation_save_path = self._conversation_save_dir / str(user_id)
-            conversation_save_path.mkdir(exist_ok=True)
-
-            conversation_save_path = (
-                    conversation_save_path / self._user_to_conversation_id[user_id]
-            )
-            conversation_save_path = conversation_save_path.with_suffix(".json")
-
-            conversation.save(conversation_save_path, bot_description=chatbot_description)
+        self._user_to_conversation[user_id].save(conversation_id, chatbot_description, connection)
 
     def get_conversation_id_by_user_id(self, user_id: int) -> str:
-            return self._user_to_conversation_id[str(user_id)]
+        return self._user_to_conversation_id[str(user_id)]
 
     @staticmethod
     def get_latest_conversation_checkpoint_path(
@@ -105,11 +80,10 @@ class ConversationDB:
 
         return latest_checkpoint, latest_checkpoint.stem
 
-
-
     def get_companion_descriptions_list(
             self,
-            user_id: int
+            user_id: int,
+            connection
     ) -> Union[List[Tuple[dict, str, str]], None]:
         """
         Display the list of companion descriptions by user_id.
@@ -117,6 +91,18 @@ class ConversationDB:
         Args:
             user_id: Telegram user_ids of the user.
         """
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT checkpoint_id FROM Companions WHERE user_id = %(user_id)s
+                """,
+                {'user_id': user_id}
+            )
+
+            # Fetch all the rows returned by the query
+            checkpoint_ids = cursor.fetchall()
+
         checkpoints = sorted(list(self._conversation_save_dir.rglob(f"{user_id}-*.json")))
         bot_descriptions = []
         for file in checkpoints:
@@ -160,7 +146,7 @@ class ConversationDB:
         """
 
         path = self._conversation_save_dir / str(user_id) / conversation_id
-        path = path.with_suffix('.json')
+        #path = path.with_suffix('.json')
         return path
 
     def delete_conversation(
@@ -213,35 +199,36 @@ class ConversationDB:
         else:
             return f"#{conversation_id} conversation ID does not exist."
 
-
     def load_conversation(
             self,
             user_id: int,
-            conversation_id: str
-    ) -> str:
-        file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
-        if file_path.exists():
-            bot_desc = json.loads(file_path.read_text())
-            tone = bot_desc['config']['tone']
-            conversation = GPT3Conversation.from_checkpoint(file_path)
-            self._user_to_conversation[str(user_id)] = conversation
-            self._user_to_conversation_id[
-                str(user_id)
-            ] = conversation_id
-            self._conversation_id_to_bot_description[conversation_id] = bot_desc['bot_description']
-
-            bot_descriptions_dict = {}
-            for line in bot_desc['bot_description'].split("\n"):
-                if line:
-                    parts = line.split(": ")
-                    if len(parts) == 2:
-                        key = parts[0]
-                        value = parts[1].strip()
-                        bot_descriptions_dict[key] = value
-            bot_descriptions_dict['tone'] = tone
-            return f"#{conversation_id} conversation ID has been loaded.", bot_descriptions_dict
-        else:
+            conversation_id: str,
+            connection
+    ) -> Tuple[str, Optional[Dict[str, str]]]:
+        try:
+            checkpoint = GPT3ConversationCheckpoint.from_sql(checkpoint_id=conversation_id, connection=connection)
+        except RuntimeError:
             return f"#{conversation_id} conversation ID does not exist.", None
+
+        conversation = GPT3Conversation.from_checkpoint(checkpoint, verbose=False)
+
+        self._user_to_conversation[str(user_id)] = conversation
+        self._user_to_conversation_id[
+            str(user_id)
+        ] = conversation_id
+        self._conversation_id_to_bot_description[conversation_id] = checkpoint.bot_description
+
+        bot_descriptions_dict = {}
+        for line in checkpoint.bot_description.split("\n"):
+            if line:
+                parts = line.split(": ")
+                if len(parts) == 2:
+                    key = parts[0]
+                    value = parts[1].strip()
+                    bot_descriptions_dict[key] = value
+        bot_descriptions_dict['tone'] = checkpoint.config.tone
+
+        return f"#{conversation_id} conversation ID has been loaded.", bot_descriptions_dict
 
     def delete_all_conversations_by_user_id(
             self,
@@ -273,8 +260,3 @@ class ConversationDB:
                 bot_desc = json.loads(checkpoint.read_text())
                 self._conversation_id_to_bot_description[conversation_id] = bot_desc['bot_description']
 
-    def __del__(self) -> None:
-        """
-        Serialize the conversations to disk when the object is deleted.
-        """
-        self.serialize_conversations()

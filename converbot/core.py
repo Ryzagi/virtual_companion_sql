@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import List
 
+import psycopg2
 from langchain import LLMChain
 from langchain.callbacks.base import CallbackManager
 from langchain.chains.conversation.memory import \
@@ -10,9 +11,16 @@ from langchain.llms import OpenAI
 from converbot.callbacks import DebugPromptCallback
 from converbot.config.gptconversation import GPT3ConversationConfig
 from converbot.constants import DEFAULT_CONFIG_PATH, DEFAULT_FRIENDLY_TONE
+from converbot.database.history_writer import SQLHistoryWriter
 from converbot.handlers.mood_handler import ConversationToneHandler
 from converbot.prompt.prompt import ConversationPrompt
 from converbot.serialization.checkpoint import GPT3ConversationCheckpoint
+import os
+import psycopg2
+from psycopg2 import extensions
+
+os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
+CONNECTION = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 
 class GPT3Conversation:
@@ -26,10 +34,10 @@ class GPT3Conversation:
     """
 
     def __init__(
-        self,
-        prompt: ConversationPrompt,
-        model_config: GPT3ConversationConfig = GPT3ConversationConfig(),
-        verbose: bool = False,
+            self,
+            prompt: ConversationPrompt,
+            model_config: GPT3ConversationConfig = GPT3ConversationConfig(),
+            verbose: bool = False,
     ):
         self._config = model_config
         self._prompt = prompt
@@ -67,10 +75,10 @@ class GPT3Conversation:
 
     @classmethod
     def from_config_file(
-        cls,
-        prompt: ConversationPrompt,
-        config_path: Path = DEFAULT_CONFIG_PATH,
-        verbose: bool = False,
+            cls,
+            prompt: ConversationPrompt,
+            config_path: Path = DEFAULT_CONFIG_PATH,
+            verbose: bool = False,
     ) -> "GPT3Conversation":
         """
         Load the conversation from a configuration file.
@@ -126,15 +134,15 @@ class GPT3Conversation:
 
         return self._debug_callback.last_used_prompt + output
 
-    def save(self, file_path: Path, bot_description) -> None:
+    def save(self, checkpoint_id: str, bot_description, connection: psycopg2.extensions.connection) -> None:
         """
         Serialize the chatbot to .json file.
 
         Args:
             bot_description: description of the companion (e.g Name, age, hobby...)
-            file_path: The path to the file to serialize to.
+            connection: The database connection.
+            checkpoint_id: The id of the checkpoint.
         """
-        file_path.parent.mkdir(exist_ok=True, parents=True)
 
         checkpoint = GPT3ConversationCheckpoint(
             config=self._config,
@@ -146,10 +154,10 @@ class GPT3Conversation:
             bot_description=bot_description
         )
 
-        checkpoint.to_json(file_path)
+        checkpoint.to_sql(checkpoint_id, connection=connection)
 
     def setup_memory(
-        self, buffer: List[str], moving_summary_buffer: str
+            self, buffer: List[str], moving_summary_buffer: str
     ) -> None:
         """
         Setup the memory of the chatbot.
@@ -164,17 +172,33 @@ class GPT3Conversation:
         self._memory.moving_summary_buffer = moving_summary_buffer
 
     @classmethod
-    def from_checkpoint(
-        cls, file_path: Path, verbose: bool = False
-    ) -> "GPT3Conversation":
+    def from_sql(
+            cls, checkpoint_id: str, connection: psycopg2.extensions.connection,
+            verbose: bool = False) -> "GPT3Conversation":
         """
         Load a chatbot from .json file.
 
         Args:
+            connection: The database connection.
+            checkpoint_id: The id of the checkpoint.
             file_path: The path to the file to load from.
             verbose: Whether to print verbose output.
         """
-        checkpoint = GPT3ConversationCheckpoint.from_json(file_path)
+
+        checkpoint = GPT3ConversationCheckpoint.from_sql(checkpoint_id, connection=connection)
+        return cls.from_checkpoint(checkpoint, verbose=verbose)
+
+    @classmethod
+    def from_checkpoint(
+            cls, checkpoint: GPT3ConversationCheckpoint, verbose: bool) -> "GPT3Conversation":
+        """
+        Load a chatbot from .json file.
+
+        Args:
+            verbose:
+            checkpoint:
+
+        """
         conversation = cls(
             prompt=ConversationPrompt(
                 prompt_text=checkpoint.prompt_template,
@@ -188,7 +212,6 @@ class GPT3Conversation:
             buffer=checkpoint.memory_buffer,
             moving_summary_buffer=checkpoint.memory_moving_summary_buffer,
         )
-        #conversation.set_tone(checkpoint.config.tone)
         return conversation
 
 

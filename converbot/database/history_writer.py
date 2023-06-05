@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 from pathlib import Path
 from typing import Optional, List, Tuple
 
@@ -22,13 +23,13 @@ class SQLHistoryWriter:
     """
 
     def __init__(
-        self,
-        host: str,
-        port: str,
-        user: str,
-        password: str,
-        database: str,
-        **kwargs
+            self,
+            host: str,
+            port: str,
+            user: str,
+            password: str,
+            database: str,
+            **kwargs
     ) -> None:
         self._connection = psycopg2.connect(
             host=host,
@@ -40,6 +41,7 @@ class SQLHistoryWriter:
         )
 
         self._create_database()
+        self._create_companions_table()
 
     @classmethod
     def from_config(cls, file_path: Path) -> "SQLHistoryWriter":
@@ -76,13 +78,13 @@ class SQLHistoryWriter:
         self._connection.commit()
 
     def write_message(
-        self,
-        conversation_id: str,
-        user_id: int,
-        user_message: str,
-        chatbot_message: str,
-        env: str = DEV_ENV,
-        timestamp: Optional[str] = None,
+            self,
+            conversation_id: str,
+            user_id: int,
+            user_message: str,
+            chatbot_message: str,
+            env: str = DEV_ENV,
+            timestamp: Optional[str] = None,
     ) -> None:
         """
         Add a new row to the ConversationHistory table.
@@ -116,6 +118,38 @@ class SQLHistoryWriter:
                 ),
             )
         self._connection.commit()
+
+    def _create_companions_table(self) -> None:
+        """
+        Create the Companions table.
+        """
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS Companions (
+                    id SERIAL PRIMARY KEY,
+                    user_id BIGINT,
+                    checkpoint_id TEXT,                   
+                    model TEXT,
+                    max_tokens INTEGER,
+                    temperature FLOAT,
+                    top_p FLOAT,
+                    frequency_penalty FLOAT,
+                    presence_penalty FLOAT,
+                    best_of INTEGER,
+                    tone TEXT,
+                    summary_buffer_memory_max_token_limit INTEGER,
+                    prompt_template TEXT,
+                    prompt_user_name TEXT,
+                    prompt_chatbot_name TEXT,
+                    memory_buffer TEXT,
+                    memory_moving_summary_buffer TEXT,
+                    bot_description TEXT                    
+                )
+                """
+            )
+        self._connection.commit()
+
 
     def get_all_messages(self):
         """
@@ -228,13 +262,17 @@ class SQLHistoryWriter:
 
 
 if __name__ == "__main__":
+    os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
+    HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+
     db = SQLHistoryWriter(
         host="localhost",
         port="5432",
         user="postgres",
-        password="123",
+        password="admin",
         database="mydatabase",
     )
+
     db.write_message(
         conversation_id="123",
         user_id=456,

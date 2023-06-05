@@ -106,7 +106,27 @@ class SQLHistoryWriter:
             if timestamp
             else datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
-        if self._connection.closed:
+
+        try:
+            with self._connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO ConversationHistory (conversation_id, user_id, user_message, chatbot_message, env, timestamp)
+                    VALUES (%s, %s, %s, %s, %s, to_timestamp(%s, 'YYYY-MM-DD HH24:MI:SS'))
+                    """,
+                    (
+                        conversation_id,
+                        user_id,
+                        user_message,
+                        chatbot_message,
+                        env,
+                        timestamp,
+                    ),
+                )
+            self._connection.commit()
+
+        except psycopg2.InterfaceError:
+            self._connection.close()
             self._connection = psycopg2.connect(
                 host=self._connection.host,
                 port=self._connection.port,
@@ -115,22 +135,10 @@ class SQLHistoryWriter:
                 database=self._connection.database,
                 **self._connection.connect_kwargs
             )
-        with self._connection.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO ConversationHistory (conversation_id, user_id, user_message, chatbot_message, env, timestamp)
-                VALUES (%s, %s, %s, %s, %s, to_timestamp(%s, 'YYYY-MM-DD HH24:MI:SS'))
-                """,
-                (
-                    conversation_id,
-                    user_id,
-                    user_message,
-                    chatbot_message,
-                    env,
-                    timestamp,
-                ),
+            self.write_message(
+                 conversation_id, user_id, user_message, chatbot_message, env, timestamp
             )
-        self._connection.commit()
+
 
     def _create_companions_table(self) -> None:
         """

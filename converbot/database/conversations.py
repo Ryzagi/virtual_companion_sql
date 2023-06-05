@@ -56,10 +56,10 @@ class ConversationDB:
 
         Returns: None
         """
-        user_id = str(user_id)
-        conversation_id = self._user_to_conversation_id[user_id]
+        user_id_str = str(user_id)
+        conversation_id = self._user_to_conversation_id[user_id_str]
         chatbot_description = self._conversation_id_to_bot_description[conversation_id]
-        self._user_to_conversation[user_id].save(conversation_id, chatbot_description, connection)
+        self._user_to_conversation[user_id_str].save(user_id, conversation_id, chatbot_description, connection)
 
     def get_conversation_id_by_user_id(self, user_id: int) -> str:
         return self._user_to_conversation_id[str(user_id)]
@@ -158,72 +158,65 @@ class ConversationDB:
                 updated_bot_descriptions.append((description, companion_id, image_path))
         return updated_bot_descriptions
 
-    def get_checkpoint_path_by_conversation_id(
-            self,
-            user_id: int,
-            conversation_id: str
-    ) -> Path:
-        """
-        Find the checkpoint path by conversation id of the user.
-
-        Args:
-            conversation_id: conversation id of the user.
-            user_id: Telegram user_ids of the user.
-        """
-
-        path = self._conversation_save_dir / str(user_id) / conversation_id
-        #path = path.with_suffix('.json')
-        return path
-
     def delete_conversation(
             self,
             user_id: int,
-            conversation_id: str
+            conversation_id: str,
+            connection
     ) -> str:
-        file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
-        if file_path.exists():
-            file_path.unlink()
-            return f"#{conversation_id} companion has been delete."
+        # Execute the query to delete the conversation from the table
+        with connection.cursor() as cursor:
+            query = "DELETE FROM Companions WHERE user_id = %(user_id)s AND conversation_id = %(conversation_id)s"
+            cursor.execute(query, {'user_id': user_id, 'conversation_id': conversation_id})
+            deleted_rows = cursor.rowcount
+
+        # Commit the transaction and close the connection
+        connection.commit()
+
+        if deleted_rows > 0:
+            return f"#{conversation_id} companion has been deleted."
         else:
             return f"#{conversation_id} companion does not exist."
 
     def delete_conversation_history(
             self,
             user_id: int,
-            conversation_id: str
+            conversation_id: str,
+            connection
     ) -> str:
-        file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
-        if file_path.exists():
-            data = read_json_file(file_path)
-            # Modify data dictionary
-            data['memory_buffer'] = []
-            data['memory_moving_summary_buffer'] = ""
-            self._user_to_conversation[str(user_id)].setup_memory([], "")
-            # Write updated data back to file
-            with open(file_path, 'w') as f:
-                json.dump(data, f, indent=4)
-            return f"#{conversation_id} conversation ID has been delete."
+
+        with connection.cursor() as cursor:
+            query = "UPDATE Companions SET memory_buffer = '', memory_moving_summary_buffer = '' WHERE user_id = %s AND conversation_id = %s"
+            cursor.execute(query, {'user_id': user_id, 'conversation_id': conversation_id})
+            # Check the affected row count
+            updated_rows = cursor.rowcount
+
+        # Commit the transaction and close the cursor and connection
+        connection.commit()
+        self._user_to_conversation[str(user_id)].setup_memory([], "")
+        if updated_rows > 0:
+            return f"#{conversation_id} conversation ID has been deleted."
         else:
             return f"#{conversation_id} conversation ID does not exist."
 
     def tone_for_conversation(
             self,
             user_id: int,
-            conversation_id: str
+            conversation_id: str,
+            tone,
+            connection
     ):
-        file_path = self.get_checkpoint_path_by_conversation_id(user_id, conversation_id)
-        if file_path.exists():
-            bot_desc = json.loads(file_path.read_text())
-            tone = bot_desc['config']['tone']
-            conversation = GPT3Conversation.from_checkpoint(file_path)
-            self._user_to_conversation[str(user_id)] = conversation
-            self._user_to_conversation_id[
-                str(user_id)
-            ] = conversation_id
-            self._conversation_id_to_bot_description[conversation_id] = bot_desc['bot_description']
-            return conversation
-        else:
+        try:
+            checkpoint = GPT3ConversationCheckpoint.from_sql(checkpoint_id=conversation_id, connection=connection)
+        except RuntimeError:
             return f"#{conversation_id} conversation ID does not exist."
+        conversation = GPT3Conversation.from_checkpoint(checkpoint, verbose=False)
+        self._user_to_conversation[str(user_id)] = conversation
+        self._user_to_conversation_id[
+            str(user_id)
+        ] = conversation_id
+        self._conversation_id_to_bot_description[conversation_id] = checkpoint.bot_description
+        conversation.set_tone(tone)
 
     def load_conversation(
             self,
@@ -258,31 +251,58 @@ class ConversationDB:
 
     def delete_all_conversations_by_user_id(
             self,
-            user_id: int
+            user_id: int,
+            connection
     ) -> str:
-        directory_path = self._conversation_save_dir / str(user_id)
-        for file_path in directory_path.glob("*.json"):
-            file_path.unlink()
-        return "All conversation ID`s deleted successfully."
+        # Execute the query to delete the rows
+        with connection.cursor() as cursor:
+            query = "DELETE FROM Companions WHERE user_id = %(user_id)s"
+            cursor.execute(query, {'user_id': user_id})
+            deleted_rows = cursor.rowcount
 
-    def load_conversations(self) -> None:
+        # Commit the transaction and close the connection
+        connection.commit()
+
+        if deleted_rows > 0:
+            return "All conversation ID`s deleted successfully."
+        else:
+            return f"No rows found with user_id={user_id}"
+
+    def load_conversations(self, connection) -> None:
         """
         Load the conversations from disk.
 
         Returns: None
         """
-        for user_id in self._conversation_save_dir.iterdir():
-            if user_id.is_dir() and len(list(user_id.iterdir())) > 0:
-                (
-                    checkpoint,
-                    conversation_id,
-                ) = self.get_latest_conversation_checkpoint_path(user_id)
-                conversation = GPT3Conversation.from_checkpoint(checkpoint)
-                self._user_to_conversation[str(user_id.name)] = conversation
-                self._user_to_conversation_id[
-                    str(user_id.name)
-                ] = conversation_id
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT user_id
+                FROM ConversationHistory;
+                """
+            )
+            user_ids = cursor.fetchall()
 
-                bot_desc = json.loads(checkpoint.read_text())
-                self._conversation_id_to_bot_description[conversation_id] = bot_desc['bot_description']
+        for user_id in user_ids:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT conversation_id
+                    FROM ConversationHistory
+                    WHERE user_id = %s
+                    ORDER BY timestamp DESC
+                    LIMIT 1
+                    """,
+                    (user_id,)
+                )
+                last_conversation_id = cursor.fetchone()[0]
+
+            checkpoint = GPT3ConversationCheckpoint.from_sql(last_conversation_id, connection=connection)
+            conversation = GPT3Conversation.from_checkpoint(checkpoint, verbose=False)
+
+            self._user_to_conversation[str(user_id)] = conversation
+            self._user_to_conversation_id[
+                str(user_id.name)
+            ] = last_conversation_id
+            self._conversation_id_to_bot_description[last_conversation_id] = checkpoint.bot_description
 

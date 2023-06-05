@@ -134,7 +134,7 @@ class GPT3Conversation:
 
         return self._debug_callback.last_used_prompt + output
 
-    def save(self, checkpoint_id: str, bot_description, connection: psycopg2.extensions.connection) -> None:
+    def save(self, user_id, checkpoint_id: str, bot_description, connection: psycopg2.extensions.connection) -> None:
         """
         Serialize the chatbot to .json file.
 
@@ -154,7 +154,7 @@ class GPT3Conversation:
             bot_description=bot_description
         )
 
-        checkpoint.to_sql(checkpoint_id, connection=connection)
+        checkpoint.to_sql(user_id, checkpoint_id, connection=connection)
 
     def setup_memory(
             self, buffer: List[str], moving_summary_buffer: str

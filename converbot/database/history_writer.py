@@ -43,6 +43,10 @@ class SQLHistoryWriter:
         self._create_database()
         self._create_companions_table()
 
+    @property
+    def connection(self) -> psycopg2.extensions.connection:
+        return self._connection
+
     @classmethod
     def from_config(cls, file_path: Path) -> "SQLHistoryWriter":
         """
@@ -272,7 +276,7 @@ if __name__ == "__main__":
         password="admin",
         database="mydatabase",
     )
-
+#
     db.write_message(
         conversation_id="123",
         user_id=456,

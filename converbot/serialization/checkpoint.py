@@ -69,7 +69,7 @@ class GPT3ConversationCheckpoint:
                     'prompt_template': row[column_names.index('prompt_template')],
                     'prompt_user_name': row[column_names.index('prompt_user_name')],
                     'prompt_chatbot_name': row[column_names.index('prompt_chatbot_name')],
-                    'memory_buffer': row[column_names.index('memory_buffer')].replace('{', '[').replace('}', ']'),
+                    'memory_buffer': json.loads(row[column_names.index('memory_buffer')]).replace('{', '[').replace('}', ']'),
                     'memory_moving_summary_buffer': row[column_names.index('memory_moving_summary_buffer')],
                     'bot_description': row[column_names.index('bot_description')],
                 }

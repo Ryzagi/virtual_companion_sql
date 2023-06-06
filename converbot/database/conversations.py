@@ -287,11 +287,12 @@ class ConversationDB:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT conversation_id
-                    FROM ConversationHistory
+                    SELECT checkpoint_id
+                    FROM Companions
                     WHERE user_id = %s
-                    ORDER BY timestamp DESC
-                    LIMIT 1
+                    ORDER BY checkpoint_id DESC
+                    LIMIT 1;
+
                     """,
                     (user_id,)
                 )

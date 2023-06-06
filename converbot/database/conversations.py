@@ -169,7 +169,7 @@ class ConversationDB:
         # Execute the query to delete the conversation from the table
         with connection.cursor() as cursor:
             query = "DELETE FROM Companions WHERE user_id = %(user_id)s AND conversation_id = %(conversation_id)s"
-            cursor.execute(query, {'user_id': user_id, 'conversation_id': conversation_id})
+            cursor.execute(query, {'user_id': str(user_id), 'conversation_id': conversation_id})
             deleted_rows = cursor.rowcount
 
         # Commit the transaction and close the connection

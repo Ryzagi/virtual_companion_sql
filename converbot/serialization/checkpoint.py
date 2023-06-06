@@ -78,7 +78,7 @@ class GPT3ConversationCheckpoint:
                 return cls(**data)
         raise RuntimeError(f'Checkpoint {checkpoint_id} not found.')
 
-    def to_sql(self, user_id: int,  checkpoint_id: str, connection: psycopg2.extensions.connection) -> None:
+    def to_sql(self, user_id: str,  checkpoint_id: str, connection: psycopg2.extensions.connection) -> None:
         """
         Save the checkpoint to the SQL table.
 
@@ -127,7 +127,7 @@ class GPT3ConversationCheckpoint:
                 %(memory_moving_summary_buffer)s,
                 %(bot_description)s
             )
-            ON CONFLICT (checkpoint_id)
+            ON CONFLICT (user_id, checkpoint_id)
             DO UPDATE SET
                 model = EXCLUDED.model,
                 max_tokens = EXCLUDED.max_tokens,

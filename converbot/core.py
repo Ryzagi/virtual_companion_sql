@@ -154,7 +154,7 @@ class GPT3Conversation:
             bot_description=bot_description
         )
 
-        checkpoint.to_sql(user_id, checkpoint_id, connection=connection)
+        checkpoint.to_sql(str(user_id), checkpoint_id, connection=connection)
 
     def setup_memory(
             self, buffer: List[str], moving_summary_buffer: str

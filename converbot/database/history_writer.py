@@ -42,14 +42,8 @@ class SQLHistoryWriter:
         )
 
         self._create_database()
-        print("Database Conversations created")
-
-        self._delete_database_companions()
-        print("Database Companions deleted")
         self._create_companions_table()
-        print("Database Companions created")
-        print("Messages written:")
-        print(self.get_all_messages_companions())
+        print("Database Conversations created")
 
 
     @property
@@ -77,7 +71,7 @@ class SQLHistoryWriter:
         with self._connection.cursor() as cursor:
             cursor.execute(
                 """
-                DROP TABLE IF EXISTS Companions                
+                DELETE FROM Companions                
                 """
             )
         self._connection.commit()

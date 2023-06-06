@@ -86,6 +86,7 @@ class GPT3ConversationCheckpoint:
             checkpoint_id: The ID of the checkpoint.
             connection: The psycopg2 connection object.
         """
+        user_id = str(user_id)
         with connection.cursor() as cursor:
             # Check if the row exists in the table
             cursor.execute(

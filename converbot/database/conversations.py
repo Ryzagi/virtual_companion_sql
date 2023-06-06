@@ -122,7 +122,7 @@ class ConversationDB:
                     prompt_template=checkpoint[12],
                     prompt_user_name=checkpoint[13],
                     prompt_chatbot_name=checkpoint[14],
-                    memory_buffer=json.loads(checkpoint[15]).replace('{', '[').replace('}', ']'),
+                    memory_buffer=checkpoint[15].replace('{', '[').replace('}', ']'),
                     memory_moving_summary_buffer=checkpoint[16],
                     bot_description=checkpoint[17],
                 )

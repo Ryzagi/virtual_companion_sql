@@ -77,8 +77,7 @@ class SQLHistoryWriter:
         with self._connection.cursor() as cursor:
             cursor.execute(
                 """
-                DROP TABLE IF EXISTS Companions
-                )
+                DROP TABLE IF EXISTS Companions                
                 """
             )
         self._connection.commit()

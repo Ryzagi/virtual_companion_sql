@@ -53,6 +53,7 @@ class GPT3ConversationCheckpoint:
             row = cursor.fetchone()
             if row:
                 column_names = [desc[0] for desc in cursor.description]
+                print(row[column_names.index('memory_buffer')])
                 data = {
                     'config': GPT3ConversationConfig(
                         model=row[column_names.index('model')],

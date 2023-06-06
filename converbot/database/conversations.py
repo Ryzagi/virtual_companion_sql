@@ -287,7 +287,7 @@ class ConversationDB:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT conversation_id
+                    SELECT checkpoint_id
                     FROM Companions
                     WHERE user_id = %s
                     ORDER BY timestamp DESC

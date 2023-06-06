@@ -52,24 +52,26 @@ class GPT3ConversationCheckpoint:
             )
             row = cursor.fetchone()
             if row:
+                column_names = [desc[0] for desc in cursor.description]
                 data = {
                     'config': GPT3ConversationConfig(
-                        model=row['model'],
-                        max_tokens=row['max_tokens'],
-                        temperature=row['temperature'],
-                        top_p=row['top_p'],
-                        frequency_penalty=row['frequency_penalty'],
-                        presence_penalty=row['presence_penalty'],
-                        best_of=row['best_of'],
-                        tone=row['tone'],
-                        summary_buffer_memory_max_token_limit=row['summary_buffer_memory_max_token_limit'],
+                        model=row[column_names.index('model')],
+                        max_tokens=row[column_names.index('max_tokens')],
+                        temperature=row[column_names.index('temperature')],
+                        top_p=row[column_names.index('top_p')],
+                        frequency_penalty=row[column_names.index('frequency_penalty')],
+                        presence_penalty=row[column_names.index('presence_penalty')],
+                        best_of=row[column_names.index('best_of')],
+                        tone=row[column_names.index('tone')],
+                        summary_buffer_memory_max_token_limit=row[
+                            column_names.index('summary_buffer_memory_max_token_limit')],
                     ),
-                    'prompt_template': row['prompt_template'],
-                    'prompt_user_name': row['prompt_user_name'],
-                    'prompt_chatbot_name': row['prompt_chatbot_name'],
-                    'memory_buffer': json.loads(row['memory_buffer']),
-                    'memory_moving_summary_buffer': row['memory_moving_summary_buffer'],
-                    'bot_description': row['bot_description'],
+                    'prompt_template': row[column_names.index('prompt_template')],
+                    'prompt_user_name': row[column_names.index('prompt_user_name')],
+                    'prompt_chatbot_name': row[column_names.index('prompt_chatbot_name')],
+                    'memory_buffer': json.loads(row[column_names.index('memory_buffer')]),
+                    'memory_moving_summary_buffer': row[column_names.index('memory_moving_summary_buffer')],
+                    'bot_description': row[column_names.index('bot_description')],
                 }
                 return cls(**data)
         raise RuntimeError(f'Checkpoint {checkpoint_id} not found.')

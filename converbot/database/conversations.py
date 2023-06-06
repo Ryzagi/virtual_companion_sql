@@ -128,7 +128,7 @@ class ConversationDB:
                 )
             )
             conversation_ids.append(checkpoint[2])
-
+        print(conversation_ids)
         bot_descriptions = []
         for checkpoint, checkpoint_id in zip(checkpoints, conversation_ids):
             bot_descriptions_dict = {}

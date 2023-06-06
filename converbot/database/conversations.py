@@ -96,7 +96,7 @@ class ConversationDB:
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT * FROM Companions WHERE user_id = %(user_id)s
+                SELECT * FROM Companions WHERE user_id = %(user_id)s::bigint
                 """,
                 {'user_id': user_id}
             )

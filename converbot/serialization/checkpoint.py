@@ -1,3 +1,4 @@
+import ast
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -69,7 +70,7 @@ class GPT3ConversationCheckpoint:
                     'prompt_template': row[column_names.index('prompt_template')],
                     'prompt_user_name': row[column_names.index('prompt_user_name')],
                     'prompt_chatbot_name': row[column_names.index('prompt_chatbot_name')],
-                    'memory_buffer': row[column_names.index('memory_buffer')].replace('{', '[').replace('}', ']'),
+                    'memory_buffer': ast.literal_eval(row[column_names.index('memory_buffer')]),
                     'memory_moving_summary_buffer': row[column_names.index('memory_moving_summary_buffer')],
                     'bot_description': row[column_names.index('bot_description')],
                 }
@@ -132,7 +133,7 @@ class GPT3ConversationCheckpoint:
                         'prompt_template': self.prompt_template,
                         'prompt_user_name': self.prompt_user_name,
                         'prompt_chatbot_name': self.prompt_chatbot_name,
-                        'memory_buffer': json.dumps(self.memory_buffer),
+                        'memory_buffer': str(self.memory_buffer),
                         'memory_moving_summary_buffer': self.memory_moving_summary_buffer,
                         'bot_description': self.bot_description,
                     }

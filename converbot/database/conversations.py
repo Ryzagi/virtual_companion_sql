@@ -1,3 +1,4 @@
+import ast
 import json
 import time
 from pathlib import Path
@@ -122,7 +123,7 @@ class ConversationDB:
                     prompt_template=checkpoint[12],
                     prompt_user_name=checkpoint[13],
                     prompt_chatbot_name=checkpoint[14],
-                    memory_buffer=checkpoint[15].replace('{', '[').replace('}', ']'),
+                    memory_buffer=ast.literal_eval(checkpoint[15]),
                     memory_moving_summary_buffer=checkpoint[16],
                     bot_description=checkpoint[17],
                 )

@@ -127,7 +127,7 @@ class GPT3ConversationCheckpoint:
                 %(memory_moving_summary_buffer)s,
                 %(bot_description)s
             )
-            ON CONFLICT (user_id, checkpoint_id)
+            ON CONFLICT (checkpoint_id)
             DO UPDATE SET
                 model = EXCLUDED.model,
                 max_tokens = EXCLUDED.max_tokens,

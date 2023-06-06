@@ -164,7 +164,7 @@ class SQLHistoryWriter:
                 """
                 CREATE TABLE IF NOT EXISTS Companions (
                     id SERIAL PRIMARY KEY,
-                    user_id BIGINT NOT NULL,
+                    user_id TEXT,
                     checkpoint_id TEXT,                   
                     model TEXT,
                     max_tokens INTEGER,

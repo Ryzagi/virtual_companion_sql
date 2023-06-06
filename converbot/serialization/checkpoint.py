@@ -78,7 +78,7 @@ class GPT3ConversationCheckpoint:
                 return cls(**data)
         raise RuntimeError(f'Checkpoint {checkpoint_id} not found.')
 
-    def to_sql(self, user_id: str,  checkpoint_id: str, connection: psycopg2.extensions.connection) -> None:
+    def to_sql(self, user_id: int, checkpoint_id: str, connection: psycopg2.extensions.connection) -> None:
         """
         Save the checkpoint to the SQL table.
 
@@ -88,81 +88,119 @@ class GPT3ConversationCheckpoint:
             connection: The psycopg2 connection object.
         """
         with connection.cursor() as cursor:
+            # Check if the row exists in the table
             cursor.execute(
                 """
-            INSERT INTO Companions (
-                user_id,
-                checkpoint_id,
-                model,
-                max_tokens,
-                temperature,
-                top_p,
-                frequency_penalty,
-                presence_penalty,
-                best_of,
-                tone,
-                summary_buffer_memory_max_token_limit,
-                prompt_template,
-                prompt_user_name,
-                prompt_chatbot_name,
-                memory_buffer,
-                memory_moving_summary_buffer,
-                bot_description
-            ) VALUES (
-                %(user_id)s,
-                %(checkpoint_id)s,
-                %(model)s,
-                %(max_tokens)s,
-                %(temperature)s,
-                %(top_p)s,
-                %(frequency_penalty)s,
-                %(presence_penalty)s,
-                %(best_of)s,
-                %(tone)s,
-                %(summary_buffer_memory_max_token_limit)s,
-                %(prompt_template)s,
-                %(prompt_user_name)s,
-                %(prompt_chatbot_name)s,
-                %(memory_buffer)s,
-                %(memory_moving_summary_buffer)s,
-                %(bot_description)s
+                SELECT COUNT(*) FROM Companions WHERE user_id = %(user_id)s AND checkpoint_id = %(checkpoint_id)s
+                """,
+                {'user_id': user_id, 'checkpoint_id': checkpoint_id}
             )
-            ON CONFLICT (user_id, checkpoint_id)
-            DO UPDATE SET
-                model = EXCLUDED.model,
-                max_tokens = EXCLUDED.max_tokens,
-                temperature = EXCLUDED.temperature,
-                top_p = EXCLUDED.top_p,
-                frequency_penalty = EXCLUDED.frequency_penalty,
-                presence_penalty = EXCLUDED.presence_penalty,
-                best_of = EXCLUDED.best_of,
-                tone = EXCLUDED.tone,
-                summary_buffer_memory_max_token_limit = EXCLUDED.summary_buffer_memory_max_token_limit,
-                prompt_template = EXCLUDED.prompt_template,
-                prompt_user_name = EXCLUDED.prompt_user_name,
-                prompt_chatbot_name = EXCLUDED.prompt_chatbot_name,
-                memory_buffer = EXCLUDED.memory_buffer,
-                memory_moving_summary_buffer = EXCLUDED.memory_moving_summary_buffer,
-                bot_description = EXCLUDED.bot_description
-            """,
-                {
-                    'user_id': user_id,
-                    'checkpoint_id': checkpoint_id,
-                    'model': self.config.model,
-                    'max_tokens': self.config.max_tokens,
-                    'temperature': self.config.temperature,
-                    'top_p': self.config.top_p,
-                    'frequency_penalty': self.config.frequency_penalty,
-                    'presence_penalty': self.config.presence_penalty,
-                    'best_of': self.config.best_of,
-                    'tone': self.config.tone,
-                    'summary_buffer_memory_max_token_limit': self.config.summary_buffer_memory_max_token_limit,
-                    'prompt_template': self.prompt_template,
-                    'prompt_user_name': self.prompt_user_name,
-                    'prompt_chatbot_name': self.prompt_chatbot_name,
-                    'memory_buffer': json.dumps(self.memory_buffer),
-                    'memory_moving_summary_buffer': self.memory_moving_summary_buffer,
-                    'bot_description': self.bot_description,
-                }
-            )
+            row_exists = cursor.fetchone()[0] > 0
+
+            if row_exists:
+                # Update the existing row
+                cursor.execute(
+                    """
+                    UPDATE Companions
+                    SET model = %(model)s,
+                        max_tokens = %(max_tokens)s,
+                        temperature = %(temperature)s,
+                        top_p = %(top_p)s,
+                        frequency_penalty = %(frequency_penalty)s,
+                        presence_penalty = %(presence_penalty)s,
+                        best_of = %(best_of)s,
+                        tone = %(tone)s,
+                        summary_buffer_memory_max_token_limit = %(summary_buffer_memory_max_token_limit)s,
+                        prompt_template = %(prompt_template)s,
+                        prompt_user_name = %(prompt_user_name)s,
+                        prompt_chatbot_name = %(prompt_chatbot_name)s,
+                        memory_buffer = %(memory_buffer)s,
+                        memory_moving_summary_buffer = %(memory_moving_summary_buffer)s,
+                        bot_description = %(bot_description)s
+                    WHERE user_id = %(user_id)s AND checkpoint_id = %(checkpoint_id)s
+                    """,
+                    {
+                        'user_id': user_id,
+                        'checkpoint_id': checkpoint_id,
+                        'model': self.config.model,
+                        'max_tokens': self.config.max_tokens,
+                        'temperature': self.config.temperature,
+                        'top_p': self.config.top_p,
+                        'frequency_penalty': self.config.frequency_penalty,
+                        'presence_penalty': self.config.presence_penalty,
+                        'best_of': self.config.best_of,
+                        'tone': self.config.tone,
+                        'summary_buffer_memory_max_token_limit': self.config.summary_buffer_memory_max_token_limit,
+                        'prompt_template': self.prompt_template,
+                        'prompt_user_name': self.prompt_user_name,
+                        'prompt_chatbot_name': self.prompt_chatbot_name,
+                        'memory_buffer': json.dumps(self.memory_buffer),
+                        'memory_moving_summary_buffer': self.memory_moving_summary_buffer,
+                        'bot_description': self.bot_description,
+                    }
+                )
+            else:
+                # Insert a new row
+                cursor.execute(
+                    """
+                    INSERT INTO Companions (
+                        user_id,
+                        checkpoint_id,
+                        model,
+                        max_tokens,
+                        temperature,
+                        top_p,
+                        frequency_penalty,
+                        presence_penalty,
+                        best_of,
+                        tone,
+                        summary_buffer_memory_max_token_limit,
+                        prompt_template,
+                        prompt_user_name,
+                        prompt_chatbot_name,
+                        memory_buffer,
+                        memory_moving_summary_buffer,
+                        bot_description
+                    ) VALUES (
+                        %(user_id)s,
+                        %(checkpoint_id)s,
+                        %(model)s,
+                        %(max_tokens)s,
+                        %(temperature)s,
+                        %(top_p)s,
+                        %(frequency_penalty)s,
+                        %(presence_penalty)s,
+                        %(best_of)s,
+                        %(tone)s,
+                        %(summary_buffer_memory_max_token_limit)s,
+                        %(prompt_template)s,
+                        %(prompt_user_name)s,
+                        %(prompt_chatbot_name)s,
+                        %(memory_buffer)s,
+                        %(memory_moving_summary_buffer)s,
+                        %(bot_description)s
+                    )
+                    """,
+                    {
+                        'user_id': user_id,
+                        'checkpoint_id': checkpoint_id,
+                        'model': self.config.model,
+                        'max_tokens': self.config.max_tokens,
+                        'temperature': self.config.temperature,
+                        'top_p': self.config.top_p,
+                        'frequency_penalty': self.config.frequency_penalty,
+                        'presence_penalty': self.config.presence_penalty,
+                        'best_of': self.config.best_of,
+                        'tone': self.config.tone,
+                        'summary_buffer_memory_max_token_limit': self.config.summary_buffer_memory_max_token_limit,
+                        'prompt_template': self.prompt_template,
+                        'prompt_user_name': self.prompt_user_name,
+                        'prompt_chatbot_name': self.prompt_chatbot_name,
+                        'memory_buffer': json.dumps(self.memory_buffer),
+                        'memory_moving_summary_buffer': self.memory_moving_summary_buffer,
+                        'bot_description': self.bot_description,
+                    }
+                )
+
         connection.commit()
+

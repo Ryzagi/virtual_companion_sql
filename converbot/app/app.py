@@ -308,8 +308,7 @@ async def generate_selfie(request: SelfieRequest):
 async def generate_selfie_web(request: SelfieWebRequest):
     endpoint_url = "https://api2.makeai.run/v1/api/infer/txt2img"
     headers = {"token": "5473e92142294dc88e0d39d6a7e40843"}
-    path_to_json = CONVERSATION_SAVE_DIR / str(request.user_id) / request.companion_id
-    bot_description = read_json_file(path_to_json.with_suffix('.json'))["bot_description"]
+    bot_description = HISTORY_WRITER.get_bot_description_of_companion_by_user_id(request.companion_id)
     prompt = SELFIE_HANDLER(bot_description)
     print(prompt)
     data = {

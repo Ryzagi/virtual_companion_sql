@@ -186,6 +186,25 @@ class SQLHistoryWriter:
             )
         self._connection.commit()
 
+    def get_bot_description_of_companion_by_user_id(self, checkpoint_id: str) -> str:
+        """
+        Returns a list of all messages in the ConversationHistory table.
+        """
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT bot_description FROM Companions WHERE checkpoint_id = %(checkpoint_id)s;
+                """,
+                {'checkpoint_id': checkpoint_id}
+            )
+            rows = cursor.fetchall()
+
+        if rows:
+            bot_description = rows[0][0]
+            return bot_description
+        else:
+            return "No bot_description found for the provided checkpoint_id."
+
     def get_all_messages_companions(self):
         """
         Returns a list of all messages in the ConversationHistory table.

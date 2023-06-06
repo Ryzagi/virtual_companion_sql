@@ -168,8 +168,8 @@ class ConversationDB:
     ) -> str:
         # Execute the query to delete the conversation from the table
         with connection.cursor() as cursor:
-            query = "DELETE FROM Companions WHERE user_id = %(user_id)s AND conversation_id = %(conversation_id)s"
-            cursor.execute(query, {'user_id': str(user_id), 'conversation_id': conversation_id})
+            query = "DELETE FROM Companions WHERE user_id = %(user_id)s AND checkpoint_id = %(checkpoint_id)s"
+            cursor.execute(query, {'user_id': str(user_id), 'checkpoint_id': conversation_id})
             deleted_rows = cursor.rowcount
 
         # Commit the transaction and close the connection
@@ -188,8 +188,8 @@ class ConversationDB:
     ) -> str:
 
         with connection.cursor() as cursor:
-            query = "UPDATE Companions SET memory_buffer = '', memory_moving_summary_buffer = '' WHERE user_id = %s AND conversation_id = %s"
-            cursor.execute(query, {'user_id': user_id, 'conversation_id': conversation_id})
+            query = "UPDATE Companions SET memory_buffer = '', memory_moving_summary_buffer = '' WHERE user_id = %s AND checkpoint_id = %s"
+            cursor.execute(query, {'user_id': user_id, 'checkpoint_id': conversation_id})
             # Check the affected row count
             updated_rows = cursor.rowcount
 

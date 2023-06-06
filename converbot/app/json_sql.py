@@ -27,7 +27,7 @@ def insert_json_files_to_table(directory, connection):
             json_data = json.load(file)
 
         # Extract user_id from the parent directory name
-        user_id = int(file_path.parent.name)
+        user_id = str(file_path.parent.name)
 
         # Extract checkpoint_id from the file name
         checkpoint_id = file_path.stem

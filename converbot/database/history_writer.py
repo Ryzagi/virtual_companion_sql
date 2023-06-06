@@ -42,10 +42,15 @@ class SQLHistoryWriter:
         )
 
         self._create_database()
-        print("Database created")
+        print("Database Conversations created")
+
+        self._delete_database_companions()
+        print("Database Companions deleted")
         self._create_companions_table()
+        print("Database Companions created")
+        print("Messages written:")
         print(self.get_all_messages_companions())
-        print("Database created")
+
 
     @property
     def connection(self) -> psycopg2.extensions.connection:
@@ -64,6 +69,20 @@ class SQLHistoryWriter:
 
     # def __del__(self) -> None:
     #    self._connection.close()
+
+    def _delete_database_companions(self) -> None:
+        """
+        Create the ConversationHistory database.
+        """
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                DROP TABLE IF EXISTS Companions
+                )
+                """
+            )
+        self._connection.commit()
+
 
     def _create_database(self) -> None:
         """
@@ -152,7 +171,7 @@ class SQLHistoryWriter:
                 """
                 CREATE TABLE IF NOT EXISTS Companions (
                     id SERIAL PRIMARY KEY,
-                    user_id BIGINT,
+                    user_id TEXT,
                     checkpoint_id TEXT,                   
                     model TEXT,
                     max_tokens INTEGER,

@@ -99,7 +99,7 @@ class ConversationDB:
                 """
                 SELECT * FROM Companions WHERE user_id = %(user_id)s
                 """,
-                {'user_id': int(user_id)}
+                {'user_id': str(user_id)}
             )
 
             # Fetch all the rows returned by the query

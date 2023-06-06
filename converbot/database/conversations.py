@@ -278,7 +278,7 @@ class ConversationDB:
             cursor.execute(
                 """
                 SELECT DISTINCT user_id
-                FROM ConversationHistory;
+                FROM Companions;
                 """
             )
             user_ids = cursor.fetchall()
@@ -288,7 +288,7 @@ class ConversationDB:
                 cursor.execute(
                     """
                     SELECT conversation_id
-                    FROM ConversationHistory
+                    FROM Companions
                     WHERE user_id = %s
                     ORDER BY timestamp DESC
                     LIMIT 1

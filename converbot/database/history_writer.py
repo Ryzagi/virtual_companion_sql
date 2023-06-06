@@ -7,6 +7,7 @@ from typing import Optional, List, Tuple
 import psycopg2
 
 from converbot.constants import DEV_ENV
+from psycopg2 import extensions
 
 
 class SQLHistoryWriter:
@@ -41,7 +42,10 @@ class SQLHistoryWriter:
         )
 
         self._create_database()
+        print("Database created")
         self._create_companions_table()
+        print(self.get_all_messages_companions())
+        print("Database created")
 
     @property
     def connection(self) -> psycopg2.extensions.connection:
@@ -58,7 +62,7 @@ class SQLHistoryWriter:
         data = json.loads(file_path.read_text())
         return cls(**data)
 
-    #def __del__(self) -> None:
+    # def __del__(self) -> None:
     #    self._connection.close()
 
     def _create_database(self) -> None:
@@ -136,9 +140,8 @@ class SQLHistoryWriter:
                 **self._connection.connect_kwargs
             )
             self.write_message(
-                 conversation_id, user_id, user_message, chatbot_message, env, timestamp
+                conversation_id, user_id, user_message, chatbot_message, env, timestamp
             )
-
 
     def _create_companions_table(self) -> None:
         """
@@ -171,6 +174,18 @@ class SQLHistoryWriter:
             )
         self._connection.commit()
 
+    def get_all_messages_companions(self):
+        """
+        Returns a list of all messages in the ConversationHistory table.
+        """
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM Companions
+                """
+            )
+            rows = cursor.fetchall()
+        return rows
 
     def get_all_messages(self):
         """
@@ -282,24 +297,24 @@ class SQLHistoryWriter:
             return cursor.fetchone()[0]
 
 
-if __name__ == "__main__":
-    os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
-    HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
+#if __name__ == "__main__":
+    #os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
+    #HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
-    db = SQLHistoryWriter(
-        host="localhost",
-        port="5432",
-        user="postgres",
-        password="admin",
-        database="mydatabase",
-    )
-#
-    db.write_message(
-        conversation_id="123",
-        user_id=456,
-        user_message="Hello",
-        chatbot_message="Hi there!",
-    )
-    messages = db.get_all_messages()
-    for message in messages:
-        print(message)
+    #db = SQLHistoryWriter(
+    #    host="localhost",
+    #    port="5432",
+    #    user="postgres",
+    #    password="admin",
+    #    database="mydatabase",
+    #)
+    ##
+    #db.write_message(
+    #    conversation_id="123",
+    #    user_id=456,
+    #    user_message="Hello",
+    #    chatbot_message="Hi there!",
+    #)
+    #messages = db.get_all_messages()
+    #for message in messages:
+    #    print(message)

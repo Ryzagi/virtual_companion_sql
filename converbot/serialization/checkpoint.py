@@ -45,7 +45,7 @@ class GPT3ConversationCheckpoint:
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT * FROM Checkpoints
+                SELECT * FROM Companions
                 WHERE checkpoint_id = %(checkpoint_id)s
                 """,
                 {'checkpoint_id': checkpoint_id}

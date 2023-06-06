@@ -302,7 +302,7 @@ class ConversationDB:
 
             self._user_to_conversation[str(user_id)] = conversation
             self._user_to_conversation_id[
-                str(user_id.name)
+                str(user_id)
             ] = last_conversation_id
             self._conversation_id_to_bot_description[last_conversation_id] = checkpoint.bot_description
 

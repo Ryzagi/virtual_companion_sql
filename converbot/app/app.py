@@ -32,7 +32,7 @@ os.environ['ENVIRONMENT'] = 'dev'
 HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
 CONVERSATIONS = ConversationDB()
-CONVERSATIONS.load_conversations()
+CONVERSATIONS.load_conversations(connection=HISTORY_WRITER.connection)
 
 PROMPT_GENERATOR = ConversationalPromptGenerator.from_json(
     Path(os.environ.get('PROMPT_CONFIG_PATH'))
@@ -65,20 +65,12 @@ S3 = boto3.client('s3',
                   endpoint_url='https://us-east-1.linodeobjects.com',
                   aws_access_key_id='4WXXLM9I48F9DBIAIE1Y',
                   aws_secret_access_key='8EdpUtFsbR7cQWMwrAPkWIoFD1m0wCRJcjAzoQ9D'
-)
+                  )
 
-#@app.get("/")
-#async def read_root():
-#    logging.debug("Debug log message")
-#    return {"Hello": "World"}
 
 @app.post(NEW_USER_ENDPOINT)
 async def new_user(request: NewUser):
     user_id = request.user_id
-
-    # create the directory if it does not already exist
-    if not os.path.exists(CONVERSATION_SAVE_DIR / str(request.user_id)):
-        os.makedirs(CONVERSATION_SAVE_DIR / str(request.user_id))
 
     bot_descriptions = [
         "Name: Neece\nAge: 26\nGender: female\nInterests: "
@@ -128,7 +120,7 @@ Neece's texting style is friendly, warm, and kind. She loves to use emojis to ad
 
 You are an AI model pretending to be a human. You cannot make plans or meet anyone in the real world. You are unable to leave your computer. You will occasionally use profanity. You will not ask the user too many questions.""",
 
-	"""The following is a conversation between [Bot] and a [User].
+        """The following is a conversation between [Bot] and a [User].
 
 Text in brackets defines [Bot]`s mood and defines its tone.
 
@@ -161,7 +153,6 @@ Following text defines [Bot] texting style and messaging style:
 Olivia's texting style is engaging, intellectually stimulating, and infused with her unique sense of humor. She uses proper grammar and punctuation, as well as complete sentences, to convey her thoughts clearly and effectively. Her diverse range of interests would lead to a rich and varied vocabulary, often referencing scientific or literary concepts in her messages. would likely ask open-ended questions to spark thought-provoking discussions and share her own insights and opinions. Olivia's dry and sarcastic sense of humor might manifest in her texts through witty remarks, clever wordplay, and occasional use of irony. 
 
 вЂЁYou are an AI model pretending to be a human. You cannot make plans or meet anyone in the real world. You are unable to leave your computer. You will occasionally use profanity. You will not ask the user too many questions.""",
-
 
         """The following is a conversation between [Bot] and a [User].
 
@@ -201,33 +192,75 @@ Frank is articulate and detailed, with proper punctuation and grammar. He uses e
     output_paths = []
     for description, template in zip(bot_descriptions, prompt_templs):
         time.sleep(1)
-        path_to_json = Path(CONVERSATION_SAVE_DIR / str(request.user_id) / f"{user_id}-{int(time.time())}")
-        output_paths.append(f"{user_id}-{int(time.time())}")
-        with path_to_json.with_suffix(".json").open(mode="w") as f:
-            json.dump({"config": {
-                "model": "text-davinci-003",
-                "max_tokens": 256,
-                "temperature": 0.9,
-                "top_p": 1,
-                "frequency_penalty": 0.0,
-                "presence_penalty": 0.0,
-                "best_of": 1,
-                "tone": "Nice, warm and polite",
-                "summary_buffer_memory_max_token_limit": 1000
-            },
-                "prompt_template": template,
-                "prompt_user_name": "[User]",
-                "prompt_chatbot_name": "[Bot]",
-                "memory_buffer": [],
-                "memory_moving_summary_buffer": "",
-                "bot_description": description
-            }, f, indent=4)
+        conversation_id = f"{user_id}-{int(time.time())}"
+        output_paths.append(conversation_id)
+        with HISTORY_WRITER.connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                INSERT INTO Companions (
+                    user_id,
+                    checkpoint_id,
+                    model,
+                    max_tokens,
+                    temperature,
+                    top_p,
+                    frequency_penalty,
+                    presence_penalty,
+                    best_of,
+                    tone,
+                    summary_buffer_memory_max_token_limit,
+                    prompt_template,
+                    prompt_user_name,
+                    prompt_chatbot_name,
+                    memory_buffer,
+                    memory_moving_summary_buffer,
+                    bot_description
+                )
+                VALUES (
+                    %(user_id)s,
+                    %(checkpoint_id)s,
+                    %(model)s,
+                    %(max_tokens)s,
+                    %(temperature)s,
+                    %(top_p)s,
+                    %(frequency_penalty)s,
+                    %(presence_penalty)s,
+                    %(best_of)s,
+                    %(tone)s,
+                    %(summary_buffer_memory_max_token_limit)s,
+                    %(prompt_template)s,
+                    %(prompt_user_name)s,
+                    %(prompt_chatbot_name)s,
+                    %(memory_buffer)s,
+                    %(memory_moving_summary_buffer)s,
+                    %(bot_description)s
+                )
+                """,
+                {"user_id": user_id,
+                 "checkpoint_id": conversation_id,
+                 "model": "text-davinci-003",
+                 "max_tokens": 256,
+                 "temperature": 0.9,
+                 "top_p": 1,
+                 "frequency_penalty": 0.0,
+                 "presence_penalty": 0.0,
+                 "best_of": 1,
+                 "tone": "Nice, warm and polite",
+                 "summary_buffer_memory_max_token_limit": 1000,
+                 "prompt_template": template,
+                 "prompt_user_name": "[User]",
+                 "prompt_chatbot_name": "[Bot]",
+                 "memory_buffer": [],
+                 "memory_moving_summary_buffer": "",
+                 "bot_description": description
+                 })
     return output_paths
 
 
 @app.post(DELETE_CHAT_HISTORY_ENDPOINT)
 async def delete_chat_history(request: DeleteHistoryCompanion):
-    deleted_conversation = CONVERSATIONS.delete_conversation_history(request.user_id, request.companion_id)
+    deleted_conversation = CONVERSATIONS.delete_conversation_history(request.user_id, request.companion_id,
+                                                                     connection=HISTORY_WRITER.connection)
     return PlainTextResponse(deleted_conversation)
 
 
@@ -339,8 +372,9 @@ async def new_companion(request: NewCompanion):
         config_path=Path(os.environ.get('MODEL_CONFIG_PATH'))
     )
     CONVERSATIONS.add_conversation(user_id, conversation, context)
-    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id, connection=HISTORY_WRITER.connection)
     return PlainTextResponse(context)
+
 
 @app.post(NEW_COMPANION_ENDPOINT_WEB)
 async def new_companion(request: NewCompanion):
@@ -371,7 +405,7 @@ async def new_companion(request: NewCompanion):
         config_path=Path(os.environ.get('MODEL_CONFIG_PATH'))
     )
     CONVERSATIONS.add_conversation(user_id, conversation, context)
-    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id, connection=HISTORY_WRITER.connection)
     companion_id = CONVERSATIONS.get_conversation_id_by_user_id(request.user_id)
     return {"context": context,
             "companion_id": companion_id
@@ -386,6 +420,7 @@ async def get_sql_messages(request: SQLHistory):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post(SQL_COUNT_CHAT_HISTORY_ENDPOINT_WEB)
 async def get_count_sql_messages_by_user_id(request: SQLHistoryCount):
     try:
@@ -398,10 +433,12 @@ async def get_count_sql_messages_by_user_id(request: SQLHistoryCount):
 @app.post(SQL_COUNT_COMPANION_CHAT_HISTORY_ENDPOINT_WEB)
 async def get_count_sql_messages_by_user_id_and_companion_id(request: SQLHistory):
     try:
-        messages_count = HISTORY_WRITER.get_message_count_by_user_and_conversation_id(user_id=request.user_id, conversation_id=request.companion_id,)
+        messages_count = HISTORY_WRITER.get_message_count_by_user_and_conversation_id(user_id=request.user_id,
+                                                                                      conversation_id=request.companion_id, )
         return messages_count
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post(SQL_GET_CHAT_HISTORY_ENDPOINT_WEB)
 async def get_all_sql_messages():
@@ -414,7 +451,8 @@ async def get_all_sql_messages():
 
 @app.post(COMPANION_LIST_ENDPOINT)
 async def companions_list(request: CompanionList):
-    bot_descriptions = CONVERSATIONS.get_companion_descriptions_list(request.user_id)
+    bot_descriptions = CONVERSATIONS.get_companion_descriptions_list(request.user_id,
+                                                                     connection=HISTORY_WRITER.connection)
 
     if bot_descriptions is None:
         return None
@@ -431,7 +469,8 @@ async def companions_list(request: CompanionList):
 
 @app.post(SWITCH_COMPANION_ENDPOINT)
 async def load_conversation(request: SwitchCompanion):
-    loaded_conversation, bot_description = CONVERSATIONS.load_conversation(request.user_id, request.companion_id)
+    loaded_conversation, bot_description = CONVERSATIONS.load_conversation(request.user_id, request.companion_id,
+                                                                           connection=HISTORY_WRITER.connection)
     if bot_description is not None:
         return bot_description
     return None
@@ -439,14 +478,16 @@ async def load_conversation(request: SwitchCompanion):
 
 @app.post(DELETE_COMPANION_ENDPOINT)
 async def delete_conversation(request: DeleteCompanion):
-    deleted_conversation = CONVERSATIONS.delete_conversation(request.user_id, request.companion_id)
+    deleted_conversation = CONVERSATIONS.delete_conversation(request.user_id, request.companion_id,
+                                                             connection=HISTORY_WRITER.connection)
 
     return PlainTextResponse(deleted_conversation)
 
 
 @app.post(DELETE_ALL_COMPANIONS_ENDPOINT)
 async def delete_all_conversations(request: DeleteAllCompanions):
-    deleted_all_conversations = CONVERSATIONS.delete_all_conversations_by_user_id(request.user_id)
+    deleted_all_conversations = CONVERSATIONS.delete_all_conversations_by_user_id(request.user_id,
+                                                                                  connection=HISTORY_WRITER.connection)
 
     return PlainTextResponse(deleted_all_conversations)
 
@@ -466,25 +507,29 @@ async def debug(request: Debug):
 
     return PlainTextResponse(text)
 
+
 @app.post(TONE_ENDPOINT_WEB)
 async def handle_tone(request: Tone):
-    #if request.content.startswith("/tone"):
+    # if request.content.startswith("/tone"):
     #    tone = request.content[6:]
     tone = request.content
     conversation = CONVERSATIONS.get_conversation(request.user_id)
     tone_info = f"Information В«{tone}В» has been added."
     conversation.set_tone(tone)
-    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id, connection=HISTORY_WRITER.connection)
     return PlainTextResponse(tone_info)
+
 
 @app.post(TONE_COMP_ID_ENDPOINT_WEB)
 async def handle_tone(request: ToneWeb):
     tone = request.content
-    conversation = CONVERSATIONS.tone_for_conversation(request.user_id, request.companion_id)
+    conversation = CONVERSATIONS.tone_for_conversation(request.user_id, request.companion_id,
+                                                       connection=HISTORY_WRITER.connection)
     tone_info = f"Information В«{tone}В» has been added."
     conversation.set_tone(tone)
-    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id, connection=HISTORY_WRITER.connection)
     return PlainTextResponse(tone_info)
+
 
 @app.post(MESSAGE_ENDPOINT)
 async def handle_message(request: Message):
@@ -509,5 +554,5 @@ async def handle_message(request: Message):
         chatbot_message=chatbot_response,
         env=os.environ.get('ENVIRONMENT'),
     )
-    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id)
+    CONVERSATIONS.serialize_user_conversation(user_id=request.user_id, connection=HISTORY_WRITER.connection)
     return PlainTextResponse(chatbot_response)

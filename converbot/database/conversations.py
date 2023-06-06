@@ -104,7 +104,7 @@ class ConversationDB:
 
             # Fetch all the rows returned by the query
             raw_checkpoints = cursor.fetchall()
-
+        print(raw_checkpoints)
         checkpoints, conversation_ids = [], []
 
         for checkpoint in raw_checkpoints:

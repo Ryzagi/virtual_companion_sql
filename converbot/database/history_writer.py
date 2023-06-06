@@ -180,9 +180,23 @@ class SQLHistoryWriter:
                     prompt_chatbot_name TEXT,
                     memory_buffer TEXT,
                     memory_moving_summary_buffer TEXT,
-                    bot_description TEXT                    
+                    bot_description TEXT,
+                    selfie_url TEXT                   
                 )
                 """
+            )
+        self._connection.commit()
+
+    def set_selfie_url(self, checkpoint_id: str, selfie_url: str) -> None:
+        """
+        Set the selfie_url for the provided checkpoint_id.
+        """
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE Companions SET selfie_url = %(selfie_url)s WHERE checkpoint_id = %(checkpoint_id)s;
+                """,
+                {'checkpoint_id': checkpoint_id, 'selfie_url': selfie_url}
             )
         self._connection.commit()
 

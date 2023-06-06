@@ -336,7 +336,8 @@ async def generate_selfie_web(request: SelfieWebRequest):
                 bucket_name = 'makeairun'
                 key_name = f'companions/{request.companion_id}.jpg'
                 S3.put_object(Bucket=bucket_name, Key=key_name, Body=image_data, ACL='public-read')
-
+                selfie_url = f"https://makeairun.us-east-1.linodeobjects.com/companions/{request.companion_id}.jpg"
+                HISTORY_WRITER.set_selfie_url(request.companion_id, selfie_url)
                 return {"image": f'companions/{request.companion_id}.jpg'}
             else:
                 raise HTTPException(status_code=response.status, detail=response.reason)

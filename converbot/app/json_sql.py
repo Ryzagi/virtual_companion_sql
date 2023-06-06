@@ -68,7 +68,8 @@ def insert_json_files_to_table(directory, connection):
                         prompt_chatbot_name,
                         memory_buffer,
                         memory_moving_summary_buffer,
-                        bot_description
+                        bot_description,
+                        selfie_url
                     )
                     VALUES (
                         %(user_id)s,
@@ -87,7 +88,8 @@ def insert_json_files_to_table(directory, connection):
                         %(prompt_chatbot_name)s,
                         %(memory_buffer)s,
                         %(memory_moving_summary_buffer)s,
-                        %(bot_description)s
+                        %(bot_description)s,
+                        %(selfie_url)s
                     )
                     """,
                 {
@@ -107,7 +109,8 @@ def insert_json_files_to_table(directory, connection):
                     "prompt_chatbot_name": prompt_chatbot_name,
                     "memory_buffer": str(memory_buffer),
                     "memory_moving_summary_buffer": memory_moving_summary_buffer,
-                    "bot_description": bot_description
+                    "bot_description": bot_description,
+                    "selfie_url": f"https://makeairun.us-east-1.linodeobjects.com/companions/{checkpoint_id}.jpg",
                 }
             )
             connection.commit()
@@ -141,18 +144,13 @@ def delete_database_companions(connection) -> str:
    return "Deleted Companions"
 
 if __name__ == "__main__":
+
     os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
     HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
     #print(get_all_messages_companions(HISTORY_WRITER.connection))
     #print(delete_database_companions(HISTORY_WRITER.connection))
-    # Example usage:
+
     directory_path = "../../database/saved_conversations"  # Replace with the actual directory path
-    table_name = "Companions"  # Replace with the actual table name
-###
-###
     connection = HISTORY_WRITER.connection
-###
     insert_json_files_to_table(directory_path, connection)
-###
-    # Don't forget to close the database connection after you're done
     connection.close()

@@ -92,7 +92,8 @@ class ConversationDB:
         Args:
             user_id: Telegram user_ids of the user.
         """
-
+        print(user_id)
+        print(str(user_id))
         with connection.cursor() as cursor:
             cursor.execute(
                 """

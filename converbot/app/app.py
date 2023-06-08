@@ -326,6 +326,7 @@ async def generate_selfie_web(request: SelfieWebRequest):
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(endpoint_url, headers=headers, json=data) as response:
+            print(response.status)
             if response.status == 200:
                 content = await response.json()
                 # Decode the base64-encoded image data

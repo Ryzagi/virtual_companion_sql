@@ -62,9 +62,9 @@ SELFIE_HANDLER = SelfieStyleHandler()
 
 S3 = boto3.client('s3',
                   region_name='us-east-1',
-                  endpoint_url='https://us-east-1.linodeobjects.com',
-                  aws_access_key_id='4WXXLM9I48F9DBIAIE1Y',
-                  aws_secret_access_key='8EdpUtFsbR7cQWMwrAPkWIoFD1m0wCRJcjAzoQ9D'
+                  endpoint_url='https://47ec7d0d5b6a6c2bcda5211d2d412fd0.r2.cloudflarestorage.com',
+                  aws_access_key_id='be539a4b5e965428c81a572b0f699a57',
+                  aws_secret_access_key='d369f72be90a632aa57839af27e53fc6d77ce57e3e6cd07f64252c81e7805bf9'
                   )
 
 
@@ -333,10 +333,12 @@ async def generate_selfie_web(request: SelfieWebRequest):
                 # Upload the image data to S3
 
                 # Specify the bucket and key where you want to store the image
-                bucket_name = 'makeairun'
+                bucket_name = 'neecebotprofile'
                 key_name = f'companions/{request.companion_id}.jpg'
                 S3.put_object(Bucket=bucket_name, Key=key_name, Body=image_data, ACL='public-read')
-                selfie_url = f"https://makeairun.us-east-1.linodeobjects.com/companions/{request.companion_id}.jpg"
+                # Generate the URL for the saved image
+                selfie_url = f"https://{bucket_name}.{S3.meta.client.meta.endpoint_url}/{key_name}"
+                #selfie_url = f"https://makeairun.us-east-1.linodeobjects.com/companions/{request.companion_id}.jpg"
                 HISTORY_WRITER.set_selfie_url(request.companion_id, selfie_url)
                 return {"image": f'companions/{request.companion_id}.jpg'}
             else:

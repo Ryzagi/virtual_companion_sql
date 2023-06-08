@@ -331,16 +331,18 @@ async def generate_selfie_web(request: SelfieWebRequest):
                 # Decode the base64-encoded image data
                 image_data = base64.b64decode(content["content"]["image"])
                 # Upload the image data to S3
-
-                # Specify the bucket and key where you want to store the image
-                bucket_name = 'neecebotprofile'
-                key_name = f'{request.companion_id}.jpg'
-                S3.put_object(Bucket=bucket_name, Key=key_name, Body=image_data, ACL='public-read')
-                # Generate the URL for the saved image
-                selfie_url = f"https://{bucket_name}.{S3.meta.client.meta.endpoint_url}/{key_name}"
-                #selfie_url = f"https://makeairun.us-east-1.linodeobjects.com/companions/{request.companion_id}.jpg"
-                HISTORY_WRITER.set_selfie_url(request.companion_id, selfie_url)
-                return {"image": f'{request.companion_id}.jpg'}
+                try:
+                    # Specify the bucket and key where you want to store the image
+                    bucket_name = 'neecebotprofile'
+                    key_name = f'{request.companion_id}.jpg'
+                    S3.put_object(Bucket=bucket_name, Key=key_name, Body=image_data, ACL='public-read')
+                    # Generate the URL for the saved image
+                    selfie_url = f"https://{bucket_name}.{S3.meta.client.meta.endpoint_url}/{key_name}"
+                    #selfie_url = f"https://makeairun.us-east-1.linodeobjects.com/companions/{request.companion_id}.jpg"
+                    HISTORY_WRITER.set_selfie_url(request.companion_id, selfie_url)
+                    return {"image": f'{request.companion_id}.jpg'}
+                except Exception as e:
+                    print(e)
             else:
                 raise HTTPException(status_code=response.status, detail=response.reason)
 

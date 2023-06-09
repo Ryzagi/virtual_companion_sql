@@ -250,7 +250,7 @@ Frank is articulate and detailed, with proper punctuation and grammar. He uses e
                  "prompt_template": template,
                  "prompt_user_name": "[User]",
                  "prompt_chatbot_name": "[Bot]",
-                 "memory_buffer": [],
+                 "memory_buffer": str([]),
                  "memory_moving_summary_buffer": "",
                  "bot_description": description
                  })

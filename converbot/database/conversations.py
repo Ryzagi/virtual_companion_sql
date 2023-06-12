@@ -141,16 +141,16 @@ class ConversationDB:
                         value = parts[1].strip()
                         bot_descriptions_dict[key] = value
 
-            image_from_s3 = f"companions/{checkpoint_id}.jpg"
+            image_from_s3 = f"{checkpoint_id}.jpg"
 
             bot_descriptions.append((bot_descriptions_dict, checkpoint_id, image_from_s3))
 
         if len(bot_descriptions) == 0:
             return None
 
-        new_paths = ["companions/9999999999999999999999999999999999999999999-1681323547.jpg",
-                     "companions/9999999999999999999999999999999999999999999-1681323548.jpg",
-                     "companions/9999999999999999999999999999999999999999999-1681323549.jpg"]
+        new_paths = ["9999999999999999999999999999999999999999999-1681323547.png",
+                     "9999999999999999999999999999999999999999999-1681323548.png",
+                     "9999999999999999999999999999999999999999999-1681323549.png"]
 
         updated_bot_descriptions = []
         for i, (description, companion_id, image_path) in enumerate(bot_descriptions):

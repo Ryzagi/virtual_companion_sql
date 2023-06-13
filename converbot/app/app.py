@@ -5,7 +5,8 @@ from pathlib import Path
 import boto3
 import aiohttp
 from starlette.responses import PlainTextResponse
-
+from PIL import Image
+import io
 from converbot.app.bot_utils import create_conversation
 from converbot.app.data import CompanionList, SwitchCompanion, DeleteCompanion, DeleteAllCompanions, Debug, Message, \
     NewCompanion, NewUser, CompanionListOut, SelfieRequest, CompanionExists, DeleteHistoryCompanion, SelfieWebRequest, \
@@ -331,17 +332,30 @@ async def generate_selfie_web(request: SelfieWebRequest):
                 content = await response.json()
                 # Decode the base64-encoded image data
                 image_data = base64.b64decode(content["content"]["image"])
+
+                # Convert the image data to a PIL Image object
+                image = Image.open(io.BytesIO(image_data))
+
+                # Save the image locally in JPG format with 85% compression
+                local_path = f"{request.companion_id}.jpg"  # Replace with the desired local path
+                image.save(local_path, "JPEG", quality=85)
+
                 # Upload the image data to S3
                 try:
                     # Specify the bucket and key where you want to store the image
                     bucket_name = 'neecebotprofile'
                     key_name = f'{request.companion_id}.jpg'
-                    S3.put_object(Bucket=bucket_name, Key=key_name, Body=image_data, ACL='public-read')
+                    with open(local_path, 'rb') as file:
+                        S3.put_object(Bucket=bucket_name, Key=key_name, Body=file, ACL='public-read')
+
+                    # Delete the local file
+                    os.remove(local_path)
+
                     # Generate the URL for the saved image
-                    selfie_url = f"https://{S3.meta.endpoint_url}/{key_name}"
-                    #selfie_url = f"https://makeairun.us-east-1.linodeobjects.com/companions/{request.companion_id}.jpg"
+                    selfie_url = f"https://companions.makeaitemp.com/{request.companion_id}.jpg"
                     HISTORY_WRITER.set_selfie_url(request.companion_id, selfie_url)
                     return {"image": f'{request.companion_id}.jpg'}
+
                 except Exception as e:
                     print(e)
             else:

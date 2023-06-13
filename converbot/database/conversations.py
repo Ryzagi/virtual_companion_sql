@@ -148,9 +148,9 @@ class ConversationDB:
         if len(bot_descriptions) == 0:
             return None
 
-        new_paths = ["9999999999999999999999999999999999999999999-1681323547.png",
-                     "9999999999999999999999999999999999999999999-1681323548.png",
-                     "9999999999999999999999999999999999999999999-1681323549.png"]
+        new_paths = ["Neece.jpg",
+                     "Olivia.jpg",
+                     "Frank.jpg"]
 
         updated_bot_descriptions = []
         for i, (description, companion_id, image_path) in enumerate(bot_descriptions):

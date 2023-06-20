@@ -117,15 +117,16 @@ def insert_json_files_to_table(directory, connection):
 
     print("Data insertion completed.")
 
-def get_all_messages_companions(connection):
+def get_all_messages_companions(connection, user_id):
     """
     Returns a list of all messages in the ConversationHistory table.
     """
     with connection.cursor() as cursor:
         cursor.execute(
             """
-            SELECT * FROM Companions
-            """
+            SELECT * FROM Companions WHERE user_id = %(user_id)s
+            """,
+            {"user_id": user_id},
         )
         rows = cursor.fetchall()
     return rows
@@ -147,10 +148,10 @@ if __name__ == "__main__":
 
     os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
     HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
-    #print(get_all_messages_companions(HISTORY_WRITER.connection))
+    #print(get_all_messages_companions(HISTORY_WRITER.connection, '1079167964940701'))
     #print(delete_database_companions(HISTORY_WRITER.connection))
 
-    directory_path = "../../database/saved_conversations"  # Replace with the actual directory path
-    connection = HISTORY_WRITER.connection
-    insert_json_files_to_table(directory_path, connection)
-    connection.close()
+    #directory_path = "../../database/saved_conversations"  # Replace with the actual directory path
+    #connection = HISTORY_WRITER.connection
+    #insert_json_files_to_table(directory_path, connection)
+    #connection.close()

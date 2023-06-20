@@ -145,7 +145,7 @@ def delete_database_companions(connection) -> str:
    return "Deleted Companions"
 
 if __name__ == "__main__":
-
+    print("Running json_sql.py")
     os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
     HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
     #print(get_all_messages_companions(HISTORY_WRITER.connection, '1079167964940701'))

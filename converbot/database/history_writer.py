@@ -43,6 +43,7 @@ class SQLHistoryWriter:
 
         self._create_database()
         self._create_companions_table()
+        self._create_payment_table()
         print("Database Conversations created")
 
 
@@ -185,6 +186,25 @@ class SQLHistoryWriter:
                 )
                 """
             )
+        self._connection.commit()
+
+    def _create_payment_table(self) -> None:
+        """
+        Create the payment table.
+        """
+        with self._connection.cursor() as cursor:
+            create_table_query = '''
+                CREATE TABLE IF NOT EXISTS payment (
+                    id SERIAL PRIMARY KEY,
+                    user_id BIGINT REFERENCES users(id) NOT NULL,
+                    client_secret VARCHAR(255) NOT NULL,
+                    client_email VARCHAR(255) NOT NULL,
+                    subscription_id VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+                )
+            '''
+            cursor.execute(create_table_query)
         self._connection.commit()
 
     def set_selfie_url(self, checkpoint_id: str, selfie_url: str) -> None:

@@ -210,7 +210,6 @@ class SQLHistoryWriter:
         Create a new user in the database.
         """
         try:
-            print(user_id, conversation_id, template, description)
             with self._connection.cursor() as cursor:
                 cursor.execute(
                     f"""
@@ -271,7 +270,7 @@ class SQLHistoryWriter:
                      "memory_moving_summary_buffer": "",
                      "bot_description": description
                      })
-                self._connection.commit()
+                self._connection.commit()  # Commit the changes to the database
         except psycopg2.InterfaceError:
             self._connection.close()
             self._connection = psycopg2.connect(

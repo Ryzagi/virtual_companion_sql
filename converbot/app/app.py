@@ -78,7 +78,7 @@ async def new_user(request: NewUser):
         time.sleep(1)
         conversation_id = f"{user_id}-{int(time.time())}"
         output_paths.append(conversation_id)
-        HISTORY_WRITER.create_new_user(user_id, conversation_id, description, template)
+        HISTORY_WRITER.create_new_user(user_id, conversation_id, template, description)
     return output_paths
 
 

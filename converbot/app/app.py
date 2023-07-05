@@ -74,7 +74,6 @@ async def new_user(request: NewUser):
     user_id = request.user_id
     txt_style = ConversationTextStyleHandler()
     output_paths = []
-    print(bot_descriptions, prompt_templs)
     for description, template in zip(bot_descriptions, prompt_templs):
         time.sleep(1)
         conversation_id = f"{user_id}-{int(time.time())}"

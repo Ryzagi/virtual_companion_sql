@@ -210,48 +210,49 @@ class SQLHistoryWriter:
         Create a new user in the database.
         """
         try:
+            print(user_id, conversation_id, template, description)
             with self._connection.cursor() as cursor:
                 cursor.execute(
                     f"""
-                                INSERT INTO Companions (
-                                    user_id,
-                                    checkpoint_id,
-                                    model,
-                                    max_tokens,
-                                    temperature,
-                                    top_p,
-                                    frequency_penalty,
-                                    presence_penalty,
-                                    best_of,
-                                    tone,
-                                    summary_buffer_memory_max_token_limit,
-                                    prompt_template,
-                                    prompt_user_name,
-                                    prompt_chatbot_name,
-                                    memory_buffer,
-                                    memory_moving_summary_buffer,
-                                    bot_description
-                                )
-                                VALUES (
-                                    %(user_id)s,
-                                    %(checkpoint_id)s,
-                                    %(model)s,
-                                    %(max_tokens)s,
-                                    %(temperature)s,
-                                    %(top_p)s,
-                                    %(frequency_penalty)s,
-                                    %(presence_penalty)s,
-                                    %(best_of)s,
-                                    %(tone)s,
-                                    %(summary_buffer_memory_max_token_limit)s,
-                                    %(prompt_template)s,
-                                    %(prompt_user_name)s,
-                                    %(prompt_chatbot_name)s,
-                                    %(memory_buffer)s,
-                                    %(memory_moving_summary_buffer)s,
-                                    %(bot_description)s
-                                )
-                                """,
+                        INSERT INTO Companions (
+                            user_id,
+                            checkpoint_id,
+                            model,
+                            max_tokens,
+                            temperature,
+                            top_p,
+                            frequency_penalty,
+                            presence_penalty,
+                            best_of,
+                            tone,
+                            summary_buffer_memory_max_token_limit,
+                            prompt_template,
+                            prompt_user_name,
+                            prompt_chatbot_name,
+                            memory_buffer,
+                            memory_moving_summary_buffer,
+                            bot_description
+                        )
+                        VALUES (
+                            %(user_id)s,
+                            %(checkpoint_id)s,
+                            %(model)s,
+                            %(max_tokens)s,
+                            %(temperature)s,
+                            %(top_p)s,
+                            %(frequency_penalty)s,
+                            %(presence_penalty)s,
+                            %(best_of)s,
+                            %(tone)s,
+                            %(summary_buffer_memory_max_token_limit)s,
+                            %(prompt_template)s,
+                            %(prompt_user_name)s,
+                            %(prompt_chatbot_name)s,
+                            %(memory_buffer)s,
+                            %(memory_moving_summary_buffer)s,
+                            %(bot_description)s
+                        )
+                        """,
                     {"user_id": user_id,
                      "checkpoint_id": conversation_id,
                      "model": "text-davinci-003",

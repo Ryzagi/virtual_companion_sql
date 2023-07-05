@@ -271,7 +271,7 @@ class SQLHistoryWriter:
                      "memory_moving_summary_buffer": "",
                      "bot_description": description
                      })
-            #self._connection.commit()
+                self._connection.commit()
         except psycopg2.InterfaceError:
             self._connection.close()
             self._connection = psycopg2.connect(

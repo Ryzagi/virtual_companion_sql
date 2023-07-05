@@ -46,7 +46,6 @@ class SQLHistoryWriter:
         self._create_payment_table()
         print("Database Conversations created")
 
-
     @property
     def connection(self) -> psycopg2.extensions.connection:
         return self._connection
@@ -76,7 +75,6 @@ class SQLHistoryWriter:
                 """
             )
         self._connection.commit()
-
 
     def _create_database(self) -> None:
         """
@@ -206,6 +204,86 @@ class SQLHistoryWriter:
             '''
             cursor.execute(create_table_query)
         self._connection.commit()
+
+    def create_new_user(self, user_id, conversation_id, template, description) -> None:
+        """
+        Create a new user in the database.
+        """
+        try:
+            with self._connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                                INSERT INTO Companions (
+                                    user_id,
+                                    checkpoint_id,
+                                    model,
+                                    max_tokens,
+                                    temperature,
+                                    top_p,
+                                    frequency_penalty,
+                                    presence_penalty,
+                                    best_of,
+                                    tone,
+                                    summary_buffer_memory_max_token_limit,
+                                    prompt_template,
+                                    prompt_user_name,
+                                    prompt_chatbot_name,
+                                    memory_buffer,
+                                    memory_moving_summary_buffer,
+                                    bot_description
+                                )
+                                VALUES (
+                                    %(user_id)s,
+                                    %(checkpoint_id)s,
+                                    %(model)s,
+                                    %(max_tokens)s,
+                                    %(temperature)s,
+                                    %(top_p)s,
+                                    %(frequency_penalty)s,
+                                    %(presence_penalty)s,
+                                    %(best_of)s,
+                                    %(tone)s,
+                                    %(summary_buffer_memory_max_token_limit)s,
+                                    %(prompt_template)s,
+                                    %(prompt_user_name)s,
+                                    %(prompt_chatbot_name)s,
+                                    %(memory_buffer)s,
+                                    %(memory_moving_summary_buffer)s,
+                                    %(bot_description)s
+                                )
+                                """,
+                    {"user_id": user_id,
+                     "checkpoint_id": conversation_id,
+                     "model": "text-davinci-003",
+                     "max_tokens": 256,
+                     "temperature": 0.9,
+                     "top_p": 1,
+                     "frequency_penalty": 0.0,
+                     "presence_penalty": 0.0,
+                     "best_of": 1,
+                     "tone": "Nice, warm and polite",
+                     "summary_buffer_memory_max_token_limit": 1000,
+                     "prompt_template": template,
+                     "prompt_user_name": "[User]",
+                     "prompt_chatbot_name": "[Bot]",
+                     "memory_buffer": str([]),
+                     "memory_moving_summary_buffer": "",
+                     "bot_description": description
+                     })
+            self._connection.commit()
+        except psycopg2.InterfaceError:
+            self._connection.close()
+            self._connection = psycopg2.connect(
+                host=self._connection.host,
+                port=self._connection.port,
+                user=self._connection.user,
+                password=self._connection.password,
+                database=self._connection.database,
+                **self._connection.connect_kwargs
+            )
+            self.create_new_user(
+                conversation_id, user_id, template, description
+            )
 
     def set_selfie_url(self, checkpoint_id: str, selfie_url: str) -> None:
         """
@@ -361,25 +439,24 @@ class SQLHistoryWriter:
             )
             return cursor.fetchone()[0]
 
+# if __name__ == "__main__":
+# os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
+# HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
 
-#if __name__ == "__main__":
-    #os.environ['SQL_CONFIG_PATH'] = '../../configs/sql_config_prod.json'
-    #HISTORY_WRITER = SQLHistoryWriter.from_config(Path(os.environ.get('SQL_CONFIG_PATH')))
-
-    #db = SQLHistoryWriter(
-    #    host="localhost",
-    #    port="5432",
-    #    user="postgres",
-    #    password="admin",
-    #    database="mydatabase",
-    #)
-    ##
-    #db.write_message(
-    #    conversation_id="123",
-    #    user_id=456,
-    #    user_message="Hello",
-    #    chatbot_message="Hi there!",
-    #)
-    #messages = db.get_all_messages()
-    #for message in messages:
-    #    print(message)
+# db = SQLHistoryWriter(
+#    host="localhost",
+#    port="5432",
+#    user="postgres",
+#    password="admin",
+#    database="mydatabase",
+# )
+##
+# db.write_message(
+#    conversation_id="123",
+#    user_id=456,
+#    user_message="Hello",
+#    chatbot_message="Hi there!",
+# )
+# messages = db.get_all_messages()
+# for message in messages:
+#    print(message)

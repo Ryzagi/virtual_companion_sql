@@ -271,21 +271,19 @@ class SQLHistoryWriter:
                      "bot_description": description
                      })
                 self._connection.commit()  # Commit the changes to the database
-        except Exception as e:
-            print(e)
-        #except psycopg2.InterfaceError:
-        #    self._connection.close()
-        #    self._connection = psycopg2.connect(
-        #        host=self._connection.host,
-        #        port=self._connection.port,
-        #        user=self._connection.user,
-        #        password=self._connection.password,
-        #        database=self._connection.database,
-        #        **self._connection.connect_kwargs
-        #    )
-        #    self.create_new_user(
-        #        conversation_id, user_id, template, description
-        #    )
+        except psycopg2.InterfaceError:
+            self._connection.close()
+            self._connection = psycopg2.connect(
+                host=self._connection.host,
+                port=self._connection.port,
+                user=self._connection.user,
+                password=self._connection.password,
+                database=self._connection.database,
+                **self._connection.connect_kwargs
+            )
+            self.create_new_user(
+                conversation_id, user_id, template, description
+            )
 
     def set_selfie_url(self, checkpoint_id: str, selfie_url: str) -> None:
         """

@@ -48,15 +48,6 @@ class SQLHistoryWriter:
 
     @property
     def connection(self) -> psycopg2.extensions.connection:
-        #self._connection.close()
-        self._connection = psycopg2.connect(
-            host=self._connection.host,
-            port=self._connection.port,
-            user=self._connection.user,
-            password=self._connection.password,
-            database=self._connection.database,
-            **self._connection.connect_kwargs
-        )
         return self._connection
 
     @classmethod

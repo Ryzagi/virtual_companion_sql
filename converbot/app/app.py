@@ -68,6 +68,9 @@ S3 = boto3.client('s3',
                   aws_secret_access_key='d369f72be90a632aa57839af27e53fc6d77ce57e3e6cd07f64252c81e7805bf9'
                   )
 
+@app.get("/health",status_code=status.HTTP_200_OK)
+def root():
+    return PlainTextResponse("OK")
 
 @app.post(NEW_USER_ENDPOINT)
 async def new_user(request: NewUser):

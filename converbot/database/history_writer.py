@@ -53,8 +53,8 @@ class SQLHistoryWriter:
             return self._connection
         except psycopg2.InterfaceError:
             self._connection.close()
-            dsn = self._connection.dsn
-            self._connection = psycopg2.connect(dsn=dsn, **self._connection.connect_kwargs)
+            dsn_parameters = self._connection.get_dsn_parameters()
+            self._connection = psycopg2.connect(**dsn_parameters)
             return self._connection
 
     @classmethod

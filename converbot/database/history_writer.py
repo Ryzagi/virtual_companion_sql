@@ -41,10 +41,23 @@ class SQLHistoryWriter:
             **kwargs
         )
 
+        self._connection_params = {
+            'host': host,
+            'port': port,
+            'user': user,
+            'password': password,
+            'database': database,
+            **kwargs
+        }
+        self._connect()
+
         self._create_database()
         self._create_companions_table()
         self._create_payment_table()
         print("Database Conversations created")
+
+    def _connect(self):
+        self._connection = psycopg2.connect(**self._connection_params)
 
     @property
     def connection(self) -> psycopg2.extensions.connection:
@@ -53,8 +66,7 @@ class SQLHistoryWriter:
             return self._connection
         except psycopg2.InterfaceError:
             self._connection.close()
-            dsn_parameters = self._connection.get_dsn_parameters()
-            self._connection = psycopg2.connect(**dsn_parameters)
+            self._connect()
             return self._connection
 
     @classmethod

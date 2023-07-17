@@ -49,7 +49,6 @@ class SQLHistoryWriter:
             'database': database,
             **kwargs
         }
-        self._connect()
 
         self._create_database()
         self._create_companions_table()

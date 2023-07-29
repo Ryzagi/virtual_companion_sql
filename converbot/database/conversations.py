@@ -98,7 +98,7 @@ class ConversationDB:
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT * FROM Companions WHERE user_id = %(user_id)s
+                SELECT * FROM Companions WHERE user_id = %(user_id)s ORDER BY id ASC
                 """,
                 {'user_id': str(user_id)}
             )
